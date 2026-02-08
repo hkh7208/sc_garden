@@ -80,7 +80,7 @@ DATABASES = {
         'NAME': os.environ.get('MARIADB_NAME', 'sc_garden'),
         'USER': os.environ.get('MARIADB_USER', 'sc_garden_user'),
         'PASSWORD': os.environ.get('MARIADB_PASSWORD', 'Sc_Garden!2026'),
-        'HOST': os.environ.get('MARIADB_HOST', '127.0.0.1'),
+        'HOST': os.environ.get('MARIADB_HOST', '192.168.0.250'),
         'PORT': os.environ.get('MARIADB_PORT', '3306'),
         'OPTIONS': {
             'charset': 'utf8mb4',
