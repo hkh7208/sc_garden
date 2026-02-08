@@ -26,8 +26,7 @@ SECRET_KEY = 'django-insecure-$bbc&i-r1gt#kcyf!*4=hdb_c+30k7ef#h!^@!&70b$f=cg!v1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-
+ALLOWED_HOSTS = ['jakesto.synology.me', 'localhost','127.0.0.1']
 
 # Application definition
 
@@ -81,7 +80,7 @@ DATABASES = {
         'NAME': os.environ.get('MARIADB_NAME', 'sc_garden'),
         'USER': os.environ.get('MARIADB_USER', 'sc_garden_user'),
         'PASSWORD': os.environ.get('MARIADB_PASSWORD', 'sc_garden_password'),
-        'HOST': os.environ.get('MARIADB_HOST', '127.0.0.1'),
+        'HOST': os.environ.get('MARIADB_HOST', '192.168.0.250'),
         'PORT': os.environ.get('MARIADB_PORT', '3306'),
         'OPTIONS': {
             'charset': 'utf8mb4',
