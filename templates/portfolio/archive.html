@@ -48,7 +48,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {% for photo in photos %}
                 <article class="relative group">
-                    <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full h-64 object-cover rounded-sm" />
+                    <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full h-48 sm:h-56 md:h-64 object-cover rounded-sm" />
                     <div class="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition">
                         <a href="{% url 'portfolio:edit_photo' photo.id %}?next={{ request.get_full_path }}" class="w-8 h-8 bg-black/70 text-white rounded-full flex items-center justify-center" aria-label="edit">
                             <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

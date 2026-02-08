@@ -4,8 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}순천만 국제정원{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --ink: #1b1b1b;
+            --sand: #f7f1e6;
+            --mist: #f2f4f6;
+            --accent: #2f6d5a;
+        }
+        body {
+            font-family: "Nanum Myeongjo", serif;
+            color: var(--ink);
+            background: radial-gradient(circle at 20% 20%, #ffffff 0%, #f7f7f7 55%, #f1f1f1 100%);
+        }
+        .title-font {
+            font-family: "Playfair Display", serif;
+        }
+        .soft-grid {
+            background-image: linear-gradient(transparent 0 23px, rgba(0,0,0,0.03) 24px),
+                linear-gradient(90deg, transparent 0 23px, rgba(0,0,0,0.03) 24px);
+            background-size: 24px 24px;
+        }
         .masonry {
             column-gap: 1.5rem;
             column-count: 4;
@@ -26,9 +48,9 @@
     </style>
 </head>
 <body class="bg-white text-gray-900">
-    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
-        <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-            <div class="font-semibold tracking-[0.2em] text-sm">순천만 국제정원</div>
+    <header class="sticky top-0 z-50 bg-white/85 backdrop-blur border-b border-gray-100">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="title-font font-semibold tracking-[0.2em] text-sm">순천만 국제정원</div>
             <nav class="hidden md:flex items-center gap-8 text-sm text-gray-600">
                 <a href="{% url 'portfolio:home' %}" class="hover:text-gray-900">Home</a>
                 <a href="{% url 'portfolio:seasons' %}" class="hover:text-gray-900">The Seasons</a>
@@ -36,7 +58,16 @@
                 <a href="{% url 'portfolio:archive' %}" class="hover:text-gray-900">Archive</a>
                 <a href="{% url 'portfolio:about' %}" class="hover:text-gray-900">About</a>
             </nav>
-            <div class="md:hidden text-sm text-gray-500">메뉴</div>
+            <button id="mobile-menu-toggle" type="button" class="md:hidden text-xs tracking-[0.3em]">MENU</button>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100 bg-white/95">
+            <div class="max-w-6xl mx-auto px-6 py-6 flex flex-col gap-4 text-sm text-gray-700">
+                <a href="{% url 'portfolio:home' %}" class="hover:text-gray-900">Home</a>
+                <a href="{% url 'portfolio:seasons' %}" class="hover:text-gray-900">The Seasons</a>
+                <a href="{% url 'portfolio:zones' %}" class="hover:text-gray-900">Zones</a>
+                <a href="{% url 'portfolio:archive' %}" class="hover:text-gray-900">Archive</a>
+                <a href="{% url 'portfolio:about' %}" class="hover:text-gray-900">About</a>
+            </div>
         </div>
     </header>
 
@@ -45,10 +76,20 @@
     </main>
 
     <footer class="border-t border-gray-100 mt-20">
-        <div class="max-w-6xl mx-auto px-6 py-10 text-xs text-gray-500 flex justify-between">
+        <div class="max-w-6xl mx-auto px-6 py-10 text-xs text-gray-500 flex flex-col sm:flex-row justify-between gap-3">
             <span>Suncheon Bay Garden Archive</span>
             <span>© 2026</span>
         </div>
     </footer>
+
+    <script>
+        const menuToggle = document.getElementById('mobile-menu-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (menuToggle && mobileMenu) {
+            menuToggle.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+    </script>
 </body>
 </html>
