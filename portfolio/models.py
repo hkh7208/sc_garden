@@ -1,4 +1,10 @@
 from django.db import models
+from django.utils import timezone
+
+
+def photo_upload_path(instance, filename):
+	now = timezone.now()
+	return f"photos/{now.year}/{now.month:02d}/{filename}"
 
 
 class Season(models.Model):
@@ -40,7 +46,8 @@ class Tag(models.Model):
 
 class Photo(models.Model):
 	title = models.CharField(max_length=120)
-	image = models.ImageField(upload_to='photos/')
+	image = models.ImageField(upload_to=photo_upload_path)
+	original_filename = models.CharField(max_length=255, blank=True)
 	description = models.TextField(blank=True)
 	season = models.ForeignKey(Season, on_delete=models.SET_NULL, null=True, blank=True)
 	zone = models.ForeignKey(Zone, on_delete=models.SET_NULL, null=True, blank=True)
