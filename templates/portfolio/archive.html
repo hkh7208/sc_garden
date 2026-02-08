@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Archive | SC GARDEN{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-6 py-16">
+    <h1 class="text-3xl font-light mb-4">Archive</h1>
+    <p class="text-sm text-gray-500 mb-8">전체 기록을 최신순으로 정리했습니다.</p>
+
+    <div class="flex flex-wrap gap-2 mb-10">
+        <a href="{% url 'portfolio:archive' %}" class="px-3 py-1 text-xs border rounded-full {% if not active_tag %}bg-gray-900 text-white border-gray-900{% else %}border-gray-200 text-gray-600{% endif %}">전체</a>
+        {% for tag in tags %}
+            <a href="{% url 'portfolio:archive' %}?tag={{ tag.slug }}" class="px-3 py-1 text-xs border rounded-full {% if active_tag == tag.slug %}bg-gray-900 text-white border-gray-900{% else %}border-gray-200 text-gray-600{% endif %}">{{ tag.name }}</a>
+        {% endfor %}
+    </div>
+
+    {% if photos %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for photo in photos %}
+                <article>
+                    <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full h-64 object-cover rounded-sm" />
+                    <div class="mt-3">
+                        <h3 class="text-sm font-medium">{{ photo.title }}</h3>
+                        <p class="text-xs text-gray-500 mt-1">
+                            {% if photo.season %}{{ photo.season.name }}{% endif %}
+                            {% if photo.zone %} · {{ photo.zone.name }}{% endif %}
+                        </p>
+                        <div class="flex flex-wrap gap-1 mt-2">
+                            {% for tag in photo.tags.all %}
+                                <span class="text-[10px] uppercase tracking-wider text-gray-400">#{{ tag.name }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-sm text-gray-500">아직 업로드된 사진이 없습니다.</div>
+    {% endif %}
+</section>
+{% endblock %}

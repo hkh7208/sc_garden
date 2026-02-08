@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}순천만 국제정원{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .masonry {
+            column-gap: 1.5rem;
+            column-count: 4;
+        }
+        @media (max-width: 1024px) {
+            .masonry { column-count: 3; }
+        }
+        @media (max-width: 768px) {
+            .masonry { column-count: 2; }
+        }
+        @media (max-width: 640px) {
+            .masonry { column-count: 1; }
+        }
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900">
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
+        <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+            <div class="font-semibold tracking-[0.2em] text-sm">순천만 국제정원</div>
+            <nav class="hidden md:flex items-center gap-8 text-sm text-gray-600">
+                <a href="{% url 'portfolio:home' %}" class="hover:text-gray-900">Home</a>
+                <a href="{% url 'portfolio:seasons' %}" class="hover:text-gray-900">The Seasons</a>
+                <a href="{% url 'portfolio:zones' %}" class="hover:text-gray-900">Zones</a>
+                <a href="{% url 'portfolio:archive' %}" class="hover:text-gray-900">Archive</a>
+                <a href="{% url 'portfolio:about' %}" class="hover:text-gray-900">About</a>
+            </nav>
+            <div class="md:hidden text-sm text-gray-500">메뉴</div>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="border-t border-gray-100 mt-20">
+        <div class="max-w-6xl mx-auto px-6 py-10 text-xs text-gray-500 flex justify-between">
+            <span>Suncheon Bay Garden Archive</span>
+            <span>© 2026</span>
+        </div>
+    </footer>
+</body>
+</html>
