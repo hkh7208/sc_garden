@@ -13,13 +13,22 @@
             width: 72px;
             height: 72px;
         }
+        @media (max-width: 768px) {
+            .season-icon {
+                width: 56px;
+                height: 56px;
+            }
+            .season-icon-mobile {
+                position: static !important;
+                margin-bottom: 1rem;
+            }
+        }
     </style>
 
     <div class="flex flex-col lg:flex-row gap-12 items-start">
         <div class="flex-1">
             <div class="relative">
-                <div class="season-word title-font text-gray-900">{{ active_label }}</div>
-                <div class="absolute -top-4 left-0 season-icon text-gray-700">
+                <div class="season-icon season-icon-mobile text-gray-700 md:absolute md:-top-4 md:left-0">
                     {% if active_key == 'spring' %}
                         <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20 52c0-12 8-24 20-32" />
@@ -46,6 +55,7 @@
                         </svg>
                     {% endif %}
                 </div>
+                <div class="season-word title-font text-gray-900">{{ active_label }}</div>
             </div>
             <p class="text-sm text-gray-500 mt-6">{{ active_desc }}</p>
         </div>
