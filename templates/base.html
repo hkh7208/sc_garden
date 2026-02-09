@@ -72,6 +72,15 @@
     </header>
 
     <main>
+        {% if messages %}
+            <div class="max-w-6xl mx-auto px-6 pt-6">
+                {% for message in messages %}
+                    <div class="mb-3 px-4 py-3 border border-gray-200 bg-white text-xs text-gray-600">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
 

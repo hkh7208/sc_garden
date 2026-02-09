@@ -1,29 +1,107 @@
 {% extends 'base.html' %}
 
-{% block title %}The Seasons | SC GARDEN{% endblock %}
+{% block title %}The Seasons | 순천만 국제정원{% endblock %}
 
 {% block content %}
 <section class="max-w-6xl mx-auto px-6 py-16">
-    <h1 class="text-3xl font-light mb-4">The Seasons</h1>
-    <p class="text-sm text-gray-500 mb-10">순천만 정원의 계절감을 담아봅니다.</p>
+    <style>
+        .season-word {
+            font-size: clamp(4rem, 14vw, 10rem);
+            letter-spacing: 0.1em;
+        }
+        .season-icon {
+            width: 72px;
+            height: 72px;
+        }
+    </style>
 
-    {% for season in seasons %}
-        <div class="mb-14">
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-light">{{ season.name }}</h2>
-                <span class="text-xs text-gray-400">{{ season.description }}</span>
+    <div class="flex flex-col lg:flex-row gap-12 items-start">
+        <div class="flex-1">
+            <div class="relative">
+                <div class="season-word title-font text-gray-900">{{ active_label }}</div>
+                <div class="absolute -top-4 left-0 season-icon text-gray-700">
+                    {% if active_key == 'spring' %}
+                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 52c0-12 8-24 20-32" />
+                            <path d="M20 52c0-12-8-24-16-30" />
+                            <path d="M20 52c6-2 12-2 18 0" />
+                            <circle cx="40" cy="18" r="6" />
+                        </svg>
+                    {% elif active_key == 'summer' %}
+                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 34c8-8 18-8 26 0s18 8 26 0" />
+                            <path d="M6 46c8-8 18-8 26 0s18 8 26 0" />
+                        </svg>
+                    {% elif active_key == 'autumn' %}
+                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M32 8c8 10 8 20 0 32-8-12-8-22 0-32Z" />
+                            <path d="M32 40c8-4 16-4 24 0-8 8-16 12-24 12-8 0-16-4-24-12 8-4 16-4 24 0Z" />
+                        </svg>
+                    {% else %}
+                        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="40" cy="22" r="8" />
+                            <circle cx="40" cy="40" r="12" />
+                            <path d="M24 40h-8" />
+                            <path d="M56 40h-8" />
+                        </svg>
+                    {% endif %}
+                </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
-                {% for photo in season.photo_set.all %}
-                    <article>
-                        <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full h-56 object-cover rounded-sm" />
-                        <div class="mt-2 text-sm">{{ photo.title }}</div>
-                    </article>
-                {% empty %}
-                    <div class="text-sm text-gray-400">아직 등록된 사진이 없습니다.</div>
+            <p class="text-sm text-gray-500 mt-6">{{ active_desc }}</p>
+        </div>
+        <div class="w-full lg:w-64">
+            <div class="flex flex-row lg:flex-col gap-4 text-sm">
+                {% for item in season_nav %}
+                    <a href="{% url 'portfolio:seasons' %}?season={{ item.key }}" class="flex items-center gap-3 px-3 py-2 border {% if active_key == item.key %}border-gray-900 text-gray-900{% else %}border-gray-200 text-gray-500{% endif %}">
+                        <span class="w-6 h-6">
+                            {% if item.key == 'spring' %}
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 20c0-6 4-12 8-16" />
+                                    <path d="M12 20c0-6-4-12-8-15" />
+                                </svg>
+                            {% elif item.key == 'summer' %}
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M2 12c4-4 8-4 12 0s8 4 12 0" />
+                                </svg>
+                            {% elif item.key == 'autumn' %}
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 3c3 4 3 8 0 13-3-5-3-9 0-13Z" />
+                                </svg>
+                            {% else %}
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="14" cy="8" r="4" />
+                                    <circle cx="14" cy="16" r="6" />
+                                </svg>
+                            {% endif %}
+                        </span>
+                        <span>{{ item.label }}</span>
+                    </a>
                 {% endfor %}
             </div>
         </div>
-    {% endfor %}
+    </div>
+
+    <div class="mt-16">
+        {% if photo_groups %}
+            {% for group in photo_groups %}
+                <div class="mb-12">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="text-lg title-font">{{ group.year }}</div>
+                        <div class="h-px bg-gray-200 flex-1"></div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {% for photo in group.photos %}
+                            <article>
+                                <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full h-56 object-cover rounded-sm" />
+                                <div class="mt-2 text-sm">{{ photo.title }}</div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-sm text-gray-400">아직 등록된 사진이 없습니다.</div>
+        {% endif %}
+    </div>
 </section>
 {% endblock %}

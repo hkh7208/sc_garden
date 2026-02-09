@@ -37,10 +37,16 @@
         {% endif %}
     </form>
 
+    <div class="flex flex-wrap gap-2 mb-4">
+        <a href="{% url 'portfolio:archive' %}" class="px-3 py-1 text-xs border rounded-full {% if not active_initial %}bg-gray-900 text-white border-gray-900{% else %}border-gray-200 text-gray-600{% endif %}">전체</a>
+        {% for initial in tag_initials %}
+            <a href="{% url 'portfolio:archive' %}?initial={{ initial }}" class="px-3 py-1 text-xs border rounded-full {% if active_initial == initial %}bg-gray-900 text-white border-gray-900{% else %}border-gray-200 text-gray-600{% endif %}">{{ initial }}</a>
+        {% endfor %}
+    </div>
     <div class="flex flex-wrap gap-2 mb-10">
-        <a href="{% url 'portfolio:archive' %}" class="px-3 py-1 text-xs border rounded-full {% if not active_tag %}bg-gray-900 text-white border-gray-900{% else %}border-gray-200 text-gray-600{% endif %}">전체</a>
+        <a href="{% url 'portfolio:archive' %}{% if active_initial %}?initial={{ active_initial }}{% endif %}" class="px-3 py-1 text-xs border rounded-full {% if not active_tag %}bg-gray-900 text-white border-gray-900{% else %}border-gray-200 text-gray-600{% endif %}">전체</a>
         {% for tag in tags %}
-            <a href="{% url 'portfolio:archive' %}?tag={{ tag.slug }}" class="px-3 py-1 text-xs border rounded-full {% if active_tag == tag.slug %}bg-gray-900 text-white border-gray-900{% else %}border-gray-200 text-gray-600{% endif %}">{{ tag.name }}</a>
+            <a href="{% url 'portfolio:archive' %}?tag={{ tag.slug }}{% if active_initial %}&initial={{ active_initial }}{% endif %}" class="px-3 py-1 text-xs border rounded-full {% if active_tag == tag.slug %}bg-gray-900 text-white border-gray-900{% else %}border-gray-200 text-gray-600{% endif %}">{{ tag.name }}</a>
         {% endfor %}
     </div>
 

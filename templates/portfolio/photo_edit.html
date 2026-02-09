@@ -15,21 +15,48 @@
                 <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full max-w-[800px] h-auto object-contain" />
                 <p class="mt-3 text-xs text-gray-500">{{ photo.title }}</p>
             </div>
-            <div class="w-full lg:w-80">
-                <h2 class="text-sm font-medium mb-3">EXIF</h2>
-                {% if exif_entries %}
-                    <div class="max-h-96 overflow-y-auto text-xs text-gray-600 space-y-2">
-                        {% for label, value in exif_entries %}
-                            <div class="flex flex-col">
-                                <span class="text-gray-400">{{ label }}</span>
-                                <span>{{ value }}</span>
-                            </div>
-                        {% endfor %}
+            <div class="w-full lg:w-96">
+                <form method="post" class="space-y-5">
+                    {% csrf_token %}
+                    <div>
+                        <label class="text-xs text-gray-500">Description</label>
+                        {{ form.description }}
                     </div>
-                {% else %}
-                    <div class="text-xs text-gray-400">EXIF 정보가 없습니다.</div>
-                {% endif %}
+                    <div>
+                        <label class="text-xs text-gray-500">Season</label>
+                        {{ form.season }}
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">Zone</label>
+                        {{ form.zone }}
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">Tag</label>
+                        {{ form.tags }}
+                        <p class="text-[10px] text-gray-400 mt-1">쉼표로 구분해 입력</p>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500">촬영일자</label>
+                        {{ form.taken_at }}
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-gray-900 text-white text-xs uppercase tracking-widest">저장</button>
+                </form>
             </div>
+        </div>
+        <div class="mt-10 border-t border-gray-100 pt-6">
+            <h2 class="text-sm font-medium mb-3">EXIF</h2>
+            {% if exif_entries %}
+                <div class="max-h-64 overflow-y-auto text-xs text-gray-600 space-y-2">
+                    {% for label, value in exif_entries %}
+                        <div class="flex flex-col">
+                            <span class="text-gray-400">{{ label }}</span>
+                            <span>{{ value }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-xs text-gray-400">EXIF 정보가 없습니다.</div>
+            {% endif %}
         </div>
     </div>
 </section>

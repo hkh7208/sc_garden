@@ -4,32 +4,76 @@
 
 {% block content %}
 <section class="relative">
-    <div class="h-[65vh] md:h-[80vh] overflow-hidden bg-gray-100">
-        <div id="hero-slides" class="h-full w-full relative">
-            {% if featured %}
-                {% for photo in featured %}
-                    <div class="hero-slide absolute inset-0 opacity-0 transition-opacity duration-700">
-                        <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full h-full object-cover" />
-                        <div class="absolute inset-0 bg-black/30"></div>
-                        <div class="absolute bottom-6 left-6 md:bottom-10 md:left-10 text-white">
-                            <p class="text-xs md:text-sm uppercase tracking-[0.3em]">대표 사진</p>
-                            <h1 class="title-font text-2xl md:text-5xl font-light mt-2">{{ photo.title }}</h1>
-                        </div>
+    <style>
+        .triple-carousel {
+            height: 68vh;
+        }
+        .carousel-item {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 68%;
+            max-width: 960px;
+            transform: translate(-50%, -50%) scale(0.7);
+            opacity: 0;
+            transition: transform 700ms ease, opacity 700ms ease;
+        }
+        .carousel-item img {
+            width: 100%;
+            height: 100%;
+            max-height: 60vh;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+        .carousel-item.is-center {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            z-index: 3;
+        }
+        .carousel-item.is-left {
+            opacity: 0.55;
+            transform: translate(-120%, -50%) scale(0.75);
+            z-index: 2;
+        }
+        .carousel-item.is-right {
+            opacity: 0.55;
+            transform: translate(20%, -50%) scale(0.75);
+            z-index: 2;
+        }
+        .carousel-item.is-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        @media (max-width: 768px) {
+            .triple-carousel { height: 56vh; }
+            .carousel-item { width: 88%; }
+            .carousel-item.is-left { transform: translate(-140%, -50%) scale(0.7); }
+            .carousel-item.is-right { transform: translate(40%, -50%) scale(0.7); }
+        }
+    </style>
+    <div class="triple-carousel overflow-hidden bg-gray-100">
+        <div class="h-full w-full relative">
+            {% if recent_photos %}
+                {% for photo in recent_photos %}
+                    <div class="carousel-item" data-filename="{{ photo.original_filename|default:photo.image.name }}">
+                        <img src="{{ photo.image.url }}" alt="{{ photo.title }}" />
                     </div>
                 {% endfor %}
             {% else %}
                 <div class="absolute inset-0 flex items-center justify-center">
-                    <div class="text-gray-400">대표 사진을 업로드해주세요.</div>
+                    <div class="text-gray-400">사진을 업로드해주세요.</div>
                 </div>
             {% endif %}
         </div>
     </div>
+    <div class="max-w-4xl mx-auto px-6 mt-4 text-center text-xs text-gray-500" id="carousel-caption"></div>
 </section>
 
 <section class="max-w-6xl mx-auto px-6 -mt-12 md:-mt-16 relative z-10">
     <div class="bg-white shadow-sm border border-gray-100 px-5 py-4 flex flex-wrap gap-4 text-xs text-gray-600">
-        <span>정원의 가장 아름다운 순간을 담은 대표 사진 3~5장</span>
-        <span>계절과 장소가 만들어낸 색감과 질감의 기록</span>
+        <span>최근 업로드한 50장의 사진을 슬라이드로 감상하세요.</span>
+        <span>중앙의 큰 사진이 현재 선택된 컷입니다.</span>
     </div>
 </section>
 
@@ -60,15 +104,45 @@
 </section>
 
 <script>
-    const slides = Array.from(document.querySelectorAll('.hero-slide'));
-    let index = 0;
-    if (slides.length) {
-        slides[0].classList.add('opacity-100');
+    const carouselItems = Array.from(document.querySelectorAll('.carousel-item'));
+    const caption = document.getElementById('carousel-caption');
+    let currentIndex = 0;
+
+    const applyClasses = () => {
+        const total = carouselItems.length;
+        if (!total) {
+            return;
+        }
+        carouselItems.forEach((item) => {
+            item.classList.remove('is-center', 'is-left', 'is-right', 'is-hidden');
+            item.classList.add('is-hidden');
+            item.setAttribute('aria-hidden', 'true');
+        });
+        const leftIndex = (currentIndex - 1 + total) % total;
+        const rightIndex = (currentIndex + 1) % total;
+
+        carouselItems[currentIndex].classList.remove('is-hidden');
+        carouselItems[currentIndex].classList.add('is-center');
+        carouselItems[currentIndex].setAttribute('aria-hidden', 'false');
+
+        if (total > 1) {
+            carouselItems[leftIndex].classList.remove('is-hidden');
+            carouselItems[leftIndex].classList.add('is-left');
+            carouselItems[rightIndex].classList.remove('is-hidden');
+            carouselItems[rightIndex].classList.add('is-right');
+        }
+
+        if (caption) {
+            caption.textContent = carouselItems[currentIndex].dataset.filename || '';
+        }
+    };
+
+    if (carouselItems.length) {
+        applyClasses();
         setInterval(() => {
-            slides[index].classList.remove('opacity-100');
-            index = (index + 1) % slides.length;
-            slides[index].classList.add('opacity-100');
-        }, 5000);
+            currentIndex = (currentIndex + 1) % carouselItems.length;
+            applyClasses();
+        }, 4500);
     }
 </script>
 {% endblock %}

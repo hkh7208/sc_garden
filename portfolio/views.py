@@ -1,14 +1,17 @@
 import io
 import os
+from datetime import date
 
+from django.contrib import messages
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from django.db.models import Prefetch
 from django.shortcuts import render
+from django.utils.text import slugify
 from PIL import ExifTags, Image
 
-from .forms import PhotoUploadForm
+from .forms import PhotoEditForm, PhotoUploadForm, SEASON_CHOICES, ZONE_CHOICES
 from .models import Photo, Season, Tag, Zone
 
 
@@ -60,28 +63,46 @@ def _get_exif_data(photo):
 
 
 def home(request):
-	featured_qs = Photo.objects.filter(is_featured=True).select_related('season', 'zone')
-	featured_list = list(featured_qs[:5])
-	if len(featured_list) < 3:
-		latest_list = list(Photo.objects.select_related('season', 'zone')[:5])
-		seen_ids = {photo.id for photo in featured_list}
-		for photo in latest_list:
-			if photo.id not in seen_ids:
-				featured_list.append(photo)
-				seen_ids.add(photo.id)
-			if len(featured_list) >= 5:
-				break
+	recent_photos = Photo.objects.select_related('season', 'zone')[:50]
 	latest_photos = Photo.objects.select_related('season', 'zone')[:12]
 	return render(request, 'portfolio/home.html', {
-		'featured': featured_list,
+		'recent_photos': recent_photos,
 		'latest_photos': latest_photos,
 	})
 
 
 def seasons(request):
-	season_photos = Prefetch('photo_set', queryset=Photo.objects.select_related('season', 'zone')[:8])
-	seasons_qs = Season.objects.prefetch_related(season_photos)
-	return render(request, 'portfolio/seasons.html', {'seasons': seasons_qs})
+	season_nav = [
+		{'key': 'spring', 'label': '봄', 'desc': '풀과 꽃이 피어나는 계절'},
+		{'key': 'summer', 'label': '여름', 'desc': '파도와 녹음이 짙어지는 계절'},
+		{'key': 'autumn', 'label': '가을', 'desc': '단풍이 번지는 계절'},
+		{'key': 'winter', 'label': '겨울', 'desc': '눈과 고요가 머무는 계절'},
+	]
+	key_map = {item['key']: item for item in season_nav}
+	active_key = request.GET.get('season', 'spring')
+	if active_key not in key_map:
+		active_key = 'spring'
+	active = key_map[active_key]
+	season_obj = Season.objects.filter(name__startswith=active['label']).order_by('order', 'id').first()
+	photos_qs = Photo.objects.none()
+	if season_obj:
+		photos_qs = Photo.objects.filter(season=season_obj).select_related('season', 'zone')
+	photos_qs = photos_qs.order_by('-taken_at', '-created_at')
+	photo_groups = []
+	current_year = None
+	for photo in photos_qs:
+		year = photo.taken_at.year if photo.taken_at else photo.created_at.year
+		if current_year != year:
+			photo_groups.append({'year': year, 'photos': []})
+			current_year = year
+		photo_groups[-1]['photos'].append(photo)
+	return render(request, 'portfolio/seasons.html', {
+		'season_nav': season_nav,
+		'active_key': active_key,
+		'active_label': active['label'],
+		'active_desc': active['desc'],
+		'photo_groups': photo_groups,
+	})
 
 
 def zones(request):
@@ -92,10 +113,31 @@ def zones(request):
 
 def archive(request):
 	tag_slug = request.GET.get('tag')
+	initial = request.GET.get('initial')
 	photos = Photo.objects.select_related('season', 'zone').prefetch_related('tags')
 	if tag_slug:
 		photos = photos.filter(tags__slug=tag_slug)
 	tags = Tag.objects.all()
+	initials = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+	full_initials = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+	normalize_initial = {
+		'ㄲ': 'ㄱ',
+		'ㄸ': 'ㄷ',
+		'ㅃ': 'ㅂ',
+		'ㅆ': 'ㅅ',
+		'ㅉ': 'ㅈ',
+	}
+	def get_initial(name):
+		if not name:
+			return ''
+		first = name[0]
+		code = ord(first) - 0xAC00
+		if 0 <= code <= 11171:
+			initial = full_initials[code // 588]
+			return normalize_initial.get(initial, initial)
+		return ''
+	if initial in initials:
+		tags = [tag for tag in tags if get_initial(tag.name) == initial]
 	upload_form = PhotoUploadForm()
 	duplicate_names = []
 	upload_error = None
@@ -130,6 +172,8 @@ def archive(request):
 		'photos': photos,
 		'tags': tags,
 		'active_tag': tag_slug,
+		'tag_initials': initials,
+		'active_initial': initial,
 		'upload_form': upload_form,
 		'duplicate_names': duplicate_names,
 		'upload_error': upload_error,
@@ -145,10 +189,65 @@ def edit_photo(request, photo_id):
 	photo = get_object_or_404(Photo, id=photo_id)
 	exif_entries = _get_exif_data(photo)
 	back_url = request.GET.get('next') or 'portfolio:archive'
+	initial_tags = ', '.join(photo.tags.values_list('name', flat=True))
+	initial_season = photo.season.name if photo.season else ''
+	initial_zone = photo.zone.name if photo.zone else ''
+	initial_date = photo.taken_at or date.today()
+	if request.method == 'POST':
+		form = PhotoEditForm(request.POST)
+		if form.is_valid():
+			photo.description = form.cleaned_data['description']
+			season_name = form.cleaned_data['season']
+			zone_name = form.cleaned_data['zone']
+			if season_name:
+				season = Season.objects.filter(name=season_name).order_by('id').first()
+				if not season:
+					season = Season.objects.create(
+						name=season_name,
+						slug=slugify(season_name, allow_unicode=True),
+					)
+				photo.season = season
+			else:
+				photo.season = None
+			if zone_name:
+				zone = Zone.objects.filter(name=zone_name).order_by('id').first()
+				if not zone:
+					zone = Zone.objects.create(
+						name=zone_name,
+						slug=slugify(zone_name, allow_unicode=True),
+					)
+				photo.zone = zone
+			else:
+				photo.zone = None
+			photo.taken_at = form.cleaned_data['taken_at']
+			photo.save()
+			tags_value = form.cleaned_data['tags'] or ''
+			tag_names = [t.strip() for t in tags_value.split(',') if t.strip()]
+			photo.tags.clear()
+			for name in tag_names:
+				tag, _ = Tag.objects.get_or_create(
+					name=name,
+					defaults={'slug': slugify(name, allow_unicode=True)},
+				)
+				photo.tags.add(tag)
+			Tag.objects.filter(photo__isnull=True).delete()
+			messages.success(request, '사진 정보가 저장되었습니다.')
+			return redirect(request.path + f"?next={back_url}")
+	else:
+		form = PhotoEditForm(initial={
+			'description': photo.description,
+			'season': initial_season,
+			'zone': initial_zone,
+			'tags': initial_tags,
+			'taken_at': initial_date,
+		})
 	return render(request, 'portfolio/photo_edit.html', {
 		'photo': photo,
+		'form': form,
 		'exif_entries': exif_entries,
 		'back_url': back_url,
+		'season_choices': [choice[1] for choice in SEASON_CHOICES if choice[0]],
+		'zone_choices': [choice[1] for choice in ZONE_CHOICES if choice[0]],
 	})
 
 
@@ -158,5 +257,6 @@ def delete_photo(request, photo_id):
 	if photo.image:
 		photo.image.delete(save=False)
 	photo.delete()
+	Tag.objects.filter(photo__isnull=True).delete()
 	next_url = request.POST.get('next')
 	return redirect(next_url or 'portfolio:archive')
