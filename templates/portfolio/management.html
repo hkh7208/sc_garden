@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+
+{% block title %}사진관리 | 순천만정원{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-6 py-16">
+    <h1 class="text-3xl font-light mb-4">사진관리</h1>
+    <p class="text-sm text-gray-500 mb-8">사진 추가, 삭제, 편집은 이곳에서만 진행합니다.</p>
+
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <div class="text-xs text-gray-500">
+            {% if uploaded_count %}
+                이번 업로드에서 {{ uploaded_count }}장이 저장되었습니다.
+            {% else %}
+                사진을 업로드하고 연도별로 정리된 목록을 확인하세요.
+            {% endif %}
+        </div>
+        <div class="flex gap-2">
+            <button id="upload-toggle" type="button" class="px-4 py-2 border border-gray-900 text-xs uppercase tracking-widest">사진 업로드</button>
+            <button id="zone-toggle" type="button" class="px-4 py-2 border border-gray-900 text-xs uppercase tracking-widest">분류추가</button>
+        </div>
+    </div>
+
+    <form id="upload-form" method="post" enctype="multipart/form-data" class="hidden border border-dashed border-gray-300 p-6 mb-12">
+        {% csrf_token %}
+        <input id="file-input" type="file" name="images" multiple accept="image/*" class="hidden" />
+        <div id="dropzone" class="flex flex-col items-center justify-center gap-2 bg-gray-50 py-10 text-sm text-gray-500">
+            <div id="dropzone-empty" class="flex flex-col items-center gap-2">
+                <span>사진을 드래그 앤 드롭 하세요.</span>
+                <span class="text-xs">한번에 최대 50장까지 업로드 가능합니다.</span>
+            </div>
+            <div id="preview-grid" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 w-full"></div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 mt-4">
+            <button type="submit" class="px-4 py-2 bg-gray-900 text-white text-xs uppercase tracking-widest">업로드 시작</button>
+            <span id="file-count" class="text-xs text-gray-500">선택된 파일 없음</span>
+        </div>
+        {% if upload_error %}
+            <div class="text-xs text-red-500 mt-3">{{ upload_error }}</div>
+        {% endif %}
+    </form>
+
+    <div id="zone-form" class="hidden border border-dashed border-gray-300 p-6 mb-12">
+        <h2 class="text-base font-medium mb-4">분류 관리 (나라)</h2>
+        
+        <div class="mb-6">
+            <div class="flex gap-2 mb-3">
+                <input type="text" id="zone-input" placeholder="추가할 나라 이름을 입력하세요" class="flex-1 px-3 py-2 border border-gray-200 text-sm" />
+                <button id="zone-add-btn" type="button" class="px-4 py-2 bg-gray-900 text-white text-xs uppercase tracking-widest">추가</button>
+            </div>
+            <div id="zone-error" class="text-xs text-red-500 hidden"></div>
+            <div id="zone-success" class="text-xs text-green-600 hidden"></div>
+        </div>
+
+        <div class="bg-gray-50 p-4 rounded-sm">
+            <div class="text-xs text-gray-500 mb-3">등록된 분류</div>
+            <div id="zone-list" class="flex flex-wrap gap-2">
+                <!-- 자바스크립트에서 동적으로 추가됨 -->
+            </div>
+        </div>
+    </div>
+
+    {% if year_groups %}
+        {% for year in year_groups %}
+            <div class="mb-12">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="text-lg title-font">{{ year.year }}년</div>
+                    <div class="h-px bg-gray-200 flex-1"></div>
+                </div>
+                {% for month in year.months %}
+                    <div class="mb-8">
+                        <div class="text-base font-medium">{{ month.month }}월</div>
+                        {% if month.days %}
+                            {% for day in month.days %}
+                                <div class="mt-4">
+                                    <div class="text-xs text-gray-500 mb-3">{{ day.day }}일</div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        {% for photo in day.photos %}
+                                            <article class="relative group">
+                                                <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full h-56 object-cover rounded-sm" />
+                                                <div class="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition">
+                                                    <a href="{% url 'portfolio:edit_photo' photo.id %}?next={{ request.get_full_path }}" class="w-8 h-8 bg-black/70 text-white rounded-full flex items-center justify-center" aria-label="edit">
+                                                        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M12 20h9" />
+                                                            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                                        </svg>
+                                                    </a>
+                                                    <form method="post" action="{% url 'portfolio:delete_photo' photo.id %}" class="photo-delete-form">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                                                        <button type="submit" class="w-8 h-8 bg-black/70 text-white text-xs rounded-full">X</button>
+                                                    </form>
+                                                </div>
+                                                <div class="mt-2">
+                                                    <h3 class="text-sm font-medium">{{ photo.title }}</h3>
+                                                    <p class="text-xs text-gray-500 mt-1">
+                                                        {% if photo.season %}{{ photo.season.name }}{% endif %}
+                                                        {% if photo.zone %} · {{ photo.zone.name }}{% endif %}
+                                                    </p>
+                                                </div>
+                                            </article>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-xs text-gray-400 mt-2">등록된 사진이 없습니다.</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-sm text-gray-400">아직 등록된 사진이 없습니다.</div>
+    {% endif %}
+</section>
+
+{% if duplicate_names %}
+    <div id="duplicate-modal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div class="bg-white max-w-md w-full p-6">
+            <h3 class="text-lg font-medium mb-2">중복된 사진 {{ duplicate_names|length }}장</h3>
+            <p class="text-xs text-gray-500 mb-4">중복되지 않은 파일만 업로드되었습니다.</p>
+            <div class="max-h-40 overflow-y-auto text-xs text-gray-500 space-y-1 mb-4">
+                {% for name in duplicate_names %}
+                    <div>{{ name }}</div>
+                {% endfor %}
+            </div>
+            <button id="duplicate-close" type="button" class="px-4 py-2 border text-xs">닫기</button>
+        </div>
+    </div>
+{% endif %}
+
+<script>
+    const uploadToggle = document.getElementById('upload-toggle');
+    const uploadForm = document.getElementById('upload-form');
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const fileCount = document.getElementById('file-count');
+    const previewGrid = document.getElementById('preview-grid');
+    const dropzoneEmpty = document.getElementById('dropzone-empty');
+
+    const updateCount = (files) => {
+        if (!files || files.length === 0) {
+            fileCount.textContent = '선택된 파일 없음';
+            return;
+        }
+        fileCount.textContent = `${files.length}장 선택됨`;
+    };
+
+    const renderPreviews = (files) => {
+        if (!previewGrid || !dropzoneEmpty) {
+            return;
+        }
+        previewGrid.innerHTML = '';
+        if (!files || files.length === 0) {
+            previewGrid.classList.add('hidden');
+            dropzoneEmpty.classList.remove('hidden');
+            return;
+        }
+        dropzoneEmpty.classList.add('hidden');
+        previewGrid.classList.remove('hidden');
+        Array.from(files).forEach((file) => {
+            if (!file.type.startsWith('image/')) {
+                return;
+            }
+            const url = URL.createObjectURL(file);
+            const wrapper = document.createElement('div');
+            wrapper.className = 'w-full aspect-[4/3] bg-white overflow-hidden rounded-sm';
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = file.name;
+            img.className = 'w-full h-full object-cover';
+            img.onload = () => URL.revokeObjectURL(url);
+            wrapper.appendChild(img);
+            previewGrid.appendChild(wrapper);
+        });
+    };
+
+    if (uploadToggle) {
+        uploadToggle.addEventListener('click', () => {
+            uploadForm.classList.toggle('hidden');
+        });
+    }
+
+    if (dropzone && fileInput) {
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dropzone.classList.add('bg-white');
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('bg-white');
+        });
+        dropzone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropzone.classList.remove('bg-white');
+            const files = Array.from(event.dataTransfer.files || []);
+            if (files.length > 50) {
+                fileCount.textContent = '50장 이하로 선택해주세요.';
+                fileInput.value = '';
+                return;
+            }
+            const dataTransfer = new DataTransfer();
+            files.forEach((file) => dataTransfer.items.add(file));
+            fileInput.files = dataTransfer.files;
+            updateCount(fileInput.files);
+            renderPreviews(fileInput.files);
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 50) {
+                fileCount.textContent = '50장 이하로 선택해주세요.';
+                fileInput.value = '';
+                renderPreviews([]);
+                return;
+            }
+            updateCount(fileInput.files);
+            renderPreviews(fileInput.files);
+        });
+    }
+
+    const duplicateModal = document.getElementById('duplicate-modal');
+    const duplicateClose = document.getElementById('duplicate-close');
+    if (duplicateModal && duplicateClose) {
+        duplicateClose.addEventListener('click', () => {
+            duplicateModal.classList.add('hidden');
+        });
+    }
+
+    const deleteForms = document.querySelectorAll('.photo-delete-form');
+    deleteForms.forEach((form) => {
+        form.addEventListener('submit', (event) => {
+            const ok = confirm('이 사진을 삭제하시겠습니까?');
+            if (!ok) {
+                event.preventDefault();
+            }
+        });
+    });
+
+    // Zone 관리 로직
+    const zoneToggle = document.getElementById('zone-toggle');
+    const zoneForm = document.getElementById('zone-form');
+    const zoneInput = document.getElementById('zone-input');
+    const zoneAddBtn = document.getElementById('zone-add-btn');
+    const zoneList = document.getElementById('zone-list');
+    const zoneError = document.getElementById('zone-error');
+    const zoneSuccess = document.getElementById('zone-success');
+
+    // 분류추가 버튼 토글
+    if (zoneToggle && zoneForm) {
+        zoneToggle.addEventListener('click', () => {
+            zoneForm.classList.toggle('hidden');
+            if (!zoneForm.classList.contains('hidden')) {
+                loadZones();
+            }
+        });
+    }
+
+    // Zone 목록 로드
+    function loadZones() {
+        fetch('{% url "portfolio:get_zones" %}')
+            .then(response => response.json())
+            .then(data => {
+                zoneList.innerHTML = '';
+                data.zones.forEach(zone => {
+                    zoneList.appendChild(createZoneButton(zone));
+                });
+            })
+            .catch(error => console.error('Zone 로드 실패:', error));
+    }
+
+    // Zone 버튼 생성
+    function createZoneButton(zone) {
+        const button = document.createElement('div');
+        button.className = 'flex items-center gap-1 px-3 py-1 bg-white border border-gray-300 rounded-full text-xs';
+        button.innerHTML = `
+            <span>${zone.name}</span>
+            <button type="button" class="zone-delete-btn ml-1 text-red-500 hover:text-red-700 font-bold" data-zone-id="${zone.id}">
+                ✕
+            </button>
+        `;
+        
+        const deleteBtn = button.querySelector('.zone-delete-btn');
+        deleteBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            deleteZone(zone.id);
+        });
+
+        return button;
+    }
+
+    // Zone 추가
+    if (zoneAddBtn && zoneInput) {
+        zoneAddBtn.addEventListener('click', () => {
+            const zoneName = zoneInput.value.trim();
+            if (!zoneName) {
+                showZoneError('나라 이름을 입력해주세요.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('zone_name', zoneName);
+
+            hideZoneMessages();
+
+            fetch('{% url "portfolio:add_zone" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        zoneInput.value = '';
+                        showZoneSuccess(`"${data.zone.name}"이(가) 추가되었습니다.`);
+                        loadZones();
+                    } else {
+                        showZoneError(data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Zone 추가 실패:', error);
+                    showZoneError('네트워크 오류가 발생했습니다.');
+                });
+        });
+
+        zoneInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                zoneAddBtn.click();
+            }
+        });
+    }
+
+    // Zone 삭제
+    function deleteZone(zoneId) {
+        const ok = confirm('이 분류를 삭제하시겠습니까?\n해당 분류가 포함된 사진은 분류가 제거됩니다.');
+        if (!ok) return;
+
+        fetch(`{% url "portfolio:delete_zone" 999 %}`.replace('999', zoneId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showZoneSuccess('분류가 삭제되었습니다.');
+                    loadZones();
+                } else {
+                    showZoneError('삭제에 실패했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Zone 삭제 실패:', error);
+                showZoneError('네트워크 오류가 발생했습니다.');
+            });
+    }
+
+    // 메시지 표시
+    function showZoneError(message) {
+        zoneError.textContent = message;
+        zoneError.classList.remove('hidden');
+        zoneSuccess.classList.add('hidden');
+    }
+
+    function showZoneSuccess(message) {
+        zoneSuccess.textContent = message;
+        zoneSuccess.classList.remove('hidden');
+        zoneError.classList.add('hidden');
+    }
+
+    function hideZoneMessages() {
+        zoneError.classList.add('hidden');
+        zoneSuccess.classList.add('hidden');
+    }
+</script>
+{% endblock %}

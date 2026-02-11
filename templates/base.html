@@ -52,21 +52,25 @@
         <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div class="title-font font-semibold tracking-[0.2em] text-sm">순천만 국제정원</div>
             <nav class="hidden md:flex items-center gap-8 text-sm text-gray-600">
-                <a href="{% url 'portfolio:home' %}" class="hover:text-gray-900">Home</a>
-                <a href="{% url 'portfolio:seasons' %}" class="hover:text-gray-900">The Seasons</a>
-                <a href="{% url 'portfolio:zones' %}" class="hover:text-gray-900">Zones</a>
-                <a href="{% url 'portfolio:archive' %}" class="hover:text-gray-900">Archive</a>
-                <a href="{% url 'portfolio:about' %}" class="hover:text-gray-900">About</a>
+                <a href="{% url 'portfolio:home' %}" class="hover:text-gray-900">정원</a>
+                <a href="{% url 'portfolio:seasons' %}" class="hover:text-gray-900">정원의 사계</a>
+                <a href="{% url 'portfolio:zones' %}" class="hover:text-gray-900">나라별 정원</a>
+                <a href="{% url 'portfolio:archive' %}" class="hover:text-gray-900">사진태그</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'portfolio:management' %}" class="hover:text-gray-900">사진관리</a>
+                {% endif %}
+                <a href="{% url 'portfolio:about' %}" class="hover:text-gray-900">작가소개</a>
             </nav>
             <button id="mobile-menu-toggle" type="button" class="md:hidden text-xs tracking-[0.3em]">MENU</button>
         </div>
         <div id="mobile-menu" class="hidden md:hidden border-t border-gray-100 bg-white/95">
             <div class="max-w-6xl mx-auto px-6 py-6 flex flex-col gap-4 text-sm text-gray-700">
-                <a href="{% url 'portfolio:home' %}" class="hover:text-gray-900">Home</a>
-                <a href="{% url 'portfolio:seasons' %}" class="hover:text-gray-900">The Seasons</a>
-                <a href="{% url 'portfolio:zones' %}" class="hover:text-gray-900">Zones</a>
-                <a href="{% url 'portfolio:archive' %}" class="hover:text-gray-900">Archive</a>
-                <a href="{% url 'portfolio:about' %}" class="hover:text-gray-900">About</a>
+                <a href="{% url 'portfolio:home' %}" class="hover:text-gray-900">정원</a>
+                <a href="{% url 'portfolio:seasons' %}" class="hover:text-gray-900">정원의 사계</a>
+                <a href="{% url 'portfolio:zones' %}" class="hover:text-gray-900">나라별 정원</a>
+                <a href="{% url 'portfolio:archive' %}" class="hover:text-gray-900">사진태그</a>
+                <a href="{% url 'portfolio:management' %}" class="hover:text-gray-900">사진관리</a>
+                <a href="{% url 'portfolio:about' %}" class="hover:text-gray-900">작가소개</a>
             </div>
         </div>
     </header>

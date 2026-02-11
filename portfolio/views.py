@@ -3,7 +3,9 @@ import os
 from datetime import date
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from django.db.models import Prefetch
@@ -106,9 +108,50 @@ def seasons(request):
 
 
 def zones(request):
-	zone_photos = Prefetch('photo_set', queryset=Photo.objects.select_related('season', 'zone')[:8])
-	zones_qs = Zone.objects.prefetch_related(zone_photos)
-	return render(request, 'portfolio/zones.html', {'zones': zones_qs})
+	selected_zone = request.GET.get('zone')
+	
+	# 모든 Zone과 그에 해당하는 사진 가져오기 (최신순)
+	zones_data = []
+	for zone in Zone.objects.all().order_by('order', 'name'):
+		photos = Photo.objects.filter(zone=zone).select_related('season', 'zone').order_by('-taken_at', '-created_at')
+		zones_data.append({
+			'id': zone.id,
+			'name': zone.name,
+			'photos': list(photos)
+		})
+	
+	# 미등록 사진 가져오기 (Zone이 None인 사진)
+	unregistered_photos = Photo.objects.filter(zone__isnull=True).select_related('season', 'zone').order_by('-taken_at', '-created_at')
+	unregistered_count = unregistered_photos.count()
+	
+	# 선택된 zone 세션 저장
+	current_zone = None
+	current_zone_id = None
+	current_photos = []
+	
+	if selected_zone == 'unregistered':
+		current_zone = None
+		current_photos = list(unregistered_photos)
+	elif selected_zone:
+		try:
+			current_zone_id = int(selected_zone)
+			current_zone = Zone.objects.get(id=current_zone_id)
+			current_photos = list(current_zone.photo_set.select_related('season', 'zone').order_by('-taken_at', '-created_at'))
+		except (ValueError, Zone.DoesNotExist):
+			current_zone = None
+			current_photos = list(unregistered_photos)
+	else:
+		# 기본으로 미등록 표시
+		current_zone = None
+		current_photos = list(unregistered_photos)
+	
+	return render(request, 'portfolio/zones.html', {
+		'zones_data': zones_data,
+		'unregistered_count': unregistered_count,
+		'selected_zone_id': selected_zone if selected_zone else 'unregistered',
+		'current_zone': current_zone,
+		'current_photos': current_photos,
+	})
 
 
 def archive(request):
@@ -138,6 +181,50 @@ def archive(request):
 		return ''
 	if initial in initials:
 		tags = [tag for tag in tags if get_initial(tag.name) == initial]
+	return render(request, 'portfolio/archive.html', {
+		'photos': photos,
+		'tags': tags,
+		'active_tag': tag_slug,
+		'tag_initials': initials,
+		'active_initial': initial,
+	})
+
+
+@login_required(login_url='login')
+def management(request):
+	photos = list(
+		Photo.objects.select_related('season', 'zone').prefetch_related('tags')
+	)
+	photos.sort(key=lambda photo: (
+		photo.taken_at or photo.created_at.date(),
+		photo.created_at,
+		photo.id,
+	))
+
+	def normalize_date(photo):
+		return photo.taken_at or photo.created_at.date()
+
+	year_map = {}
+	for photo in photos:
+		photo_date = normalize_date(photo)
+		year = photo_date.year
+		month = photo_date.month
+		day = photo_date.day
+		year_entry = year_map.setdefault(year, {'months': {}})
+		month_entry = year_entry['months'].setdefault(month, {})
+		month_entry.setdefault(day, []).append(photo)
+
+	year_groups = []
+	for year in sorted(year_map.keys()):
+		months = []
+		month_map = year_map[year]['months']
+		for month in range(1, 13):
+			days = []
+			for day in sorted(month_map.get(month, {}).keys()):
+				days.append({'day': day, 'photos': month_map[month][day]})
+			months.append({'month': month, 'days': days})
+		year_groups.append({'year': year, 'months': months})
+
 	upload_form = PhotoUploadForm()
 	duplicate_names = []
 	upload_error = None
@@ -168,12 +255,36 @@ def archive(request):
 				photo.save()
 				uploaded_count += 1
 				existing_names.add(original_name)
-	return render(request, 'portfolio/archive.html', {
-		'photos': photos,
-		'tags': tags,
-		'active_tag': tag_slug,
-		'tag_initials': initials,
-		'active_initial': initial,
+		if uploaded_count:
+			photos = list(
+				Photo.objects.select_related('season', 'zone').prefetch_related('tags')
+			)
+			photos.sort(key=lambda photo: (
+				photo.taken_at or photo.created_at.date(),
+				photo.created_at,
+				photo.id,
+			))
+			year_map = {}
+			for photo in photos:
+				photo_date = normalize_date(photo)
+				year = photo_date.year
+				month = photo_date.month
+				day = photo_date.day
+				year_entry = year_map.setdefault(year, {'months': {}})
+				month_entry = year_entry['months'].setdefault(month, {})
+				month_entry.setdefault(day, []).append(photo)
+			year_groups = []
+			for year in sorted(year_map.keys()):
+				months = []
+				month_map = year_map[year]['months']
+				for month in range(1, 13):
+					days = []
+					for day in sorted(month_map.get(month, {}).keys()):
+						days.append({'day': day, 'photos': month_map[month][day]})
+					months.append({'month': month, 'days': days})
+				year_groups.append({'year': year, 'months': months})
+	return render(request, 'portfolio/management.html', {
+		'year_groups': year_groups,
 		'upload_form': upload_form,
 		'duplicate_names': duplicate_names,
 		'upload_error': upload_error,
@@ -188,7 +299,7 @@ def about(request):
 def edit_photo(request, photo_id):
 	photo = get_object_or_404(Photo, id=photo_id)
 	exif_entries = _get_exif_data(photo)
-	back_url = request.GET.get('next') or 'portfolio:archive'
+	back_url = request.GET.get('next') or 'portfolio:management'
 	initial_tags = ', '.join(photo.tags.values_list('name', flat=True))
 	initial_season = photo.season.name if photo.season else ''
 	initial_zone = photo.zone.name if photo.zone else ''
@@ -259,4 +370,35 @@ def delete_photo(request, photo_id):
 	photo.delete()
 	Tag.objects.filter(photo__isnull=True).delete()
 	next_url = request.POST.get('next')
-	return redirect(next_url or 'portfolio:archive')
+	return redirect(next_url or 'portfolio:management')
+
+@login_required(login_url='login')
+@require_POST
+def add_zone(request):
+	zone_name = request.POST.get('zone_name', '').strip()
+	if not zone_name:
+		return JsonResponse({'success': False, 'error': '나라 이름을 입력해주세요.'})
+	if Zone.objects.filter(name=zone_name).exists():
+		return JsonResponse({'success': False, 'error': f'"{zone_name}"은(는) 이미 존재합니다.'})
+	zone = Zone.objects.create(
+		name=zone_name,
+		slug=slugify(zone_name, allow_unicode=True)
+	)
+	return JsonResponse({
+		'success': True,
+		'zone': {'id': zone.id, 'name': zone.name}
+	})
+
+
+@login_required(login_url='login')
+@require_POST
+def delete_zone(request, zone_id):
+	zone = get_object_or_404(Zone, id=zone_id)
+	zone.delete()
+	return JsonResponse({'success': True})
+
+
+@login_required(login_url='login')
+def get_zones(request):
+	zones = Zone.objects.all().values('id', 'name').order_by('name')
+	return JsonResponse({'zones': list(zones)})
