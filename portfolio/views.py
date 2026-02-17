@@ -402,3 +402,82 @@ def delete_zone(request, zone_id):
 def get_zones(request):
 	zones = Zone.objects.all().values('id', 'name').order_by('name')
 	return JsonResponse({'zones': list(zones)})
+
+
+@login_required(login_url='login')
+@require_POST
+def bulk_edit_photos(request):
+	from .forms import BulkEditForm
+	
+	photo_ids = request.POST.getlist('photo_ids[]')
+	if not photo_ids:
+		return JsonResponse({'success': False, 'error': '사진을 선택해주세요.'})
+	
+	form = BulkEditForm(request.POST)
+	if not form.is_valid():
+		return JsonResponse({'success': False, 'error': '입력 데이터가 올바르지 않습니다.'})
+	
+	photos = Photo.objects.filter(id__in=photo_ids)
+	if not photos.exists():
+		return JsonResponse({'success': False, 'error': '선택된 사진을 찾을 수 없습니다.'})
+	
+	updated_count = 0
+	season_name = form.cleaned_data.get('season')
+	zone_name = form.cleaned_data.get('zone')
+	tags_value = form.cleaned_data.get('tags', '').strip()
+	taken_at = form.cleaned_data.get('taken_at')
+	
+	for photo in photos:
+		modified = False
+		
+		# 계절 수정
+		if season_name:
+			season = Season.objects.filter(name=season_name).order_by('id').first()
+			if not season:
+				season = Season.objects.create(
+					name=season_name,
+					slug=slugify(season_name, allow_unicode=True),
+				)
+			photo.season = season
+			modified = True
+		
+		# 구역(나라) 수정
+		if zone_name:
+			zone = Zone.objects.filter(name=zone_name).order_by('id').first()
+			if not zone:
+				zone = Zone.objects.create(
+					name=zone_name,
+					slug=slugify(zone_name, allow_unicode=True),
+				)
+			photo.zone = zone
+			modified = True
+		
+		# 날짜 수정
+		if taken_at:
+			photo.taken_at = taken_at
+			modified = True
+		
+		if modified:
+			photo.save()
+			updated_count += 1
+		
+		# 태그 추가 (기존 태그 유지)
+		if tags_value:
+			tag_names = [t.strip() for t in tags_value.split(',') if t.strip()]
+			for name in tag_names:
+				tag, _ = Tag.objects.get_or_create(
+					name=name,
+					defaults={'slug': slugify(name, allow_unicode=True)},
+				)
+				photo.tags.add(tag)
+			if tag_names:
+				updated_count += 1
+	
+	# 사용되지 않는 태그 삭제
+	Tag.objects.filter(photo__isnull=True).delete()
+	
+	return JsonResponse({
+		'success': True,
+		'updated_count': updated_count,
+		'message': f'{len(photo_ids)}장의 사진이 수정되었습니다.'
+	})

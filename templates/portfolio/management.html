@@ -18,6 +18,7 @@
         <div class="flex gap-2">
             <button id="upload-toggle" type="button" class="px-4 py-2 border border-gray-900 text-xs uppercase tracking-widest">사진 업로드</button>
             <button id="zone-toggle" type="button" class="px-4 py-2 border border-gray-900 text-xs uppercase tracking-widest">분류추가</button>
+            <button id="bulk-edit-toggle" type="button" class="px-4 py-2 border border-gray-900 text-xs uppercase tracking-widest">다중수정</button>
         </div>
     </div>
 
@@ -77,6 +78,7 @@
                                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                                         {% for photo in day.photos %}
                                             <article class="relative group">
+                                                <input type="checkbox" class="photo-checkbox absolute top-2 left-2 w-5 h-5 cursor-pointer z-10 hidden" data-photo-id="{{ photo.id }}" />
                                                 <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full h-56 object-cover rounded-sm" />
                                                 <div class="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition">
                                                     <a href="{% url 'portfolio:edit_photo' photo.id %}?next={{ request.get_full_path }}" class="w-8 h-8 bg-black/70 text-white rounded-full flex items-center justify-center" aria-label="edit">
@@ -129,6 +131,57 @@
         </div>
     </div>
 {% endif %}
+
+<!-- 다중 수정 모달 -->
+<div id="bulk-edit-modal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
+    <div class="bg-white max-w-md w-full p-6 rounded-sm">
+        <h3 class="text-lg font-medium mb-4">다중 수정</h3>
+        <p class="text-xs text-gray-500 mb-4">선택한 사진: <span id="selected-count">0</span>장</p>
+        
+        <form id="bulk-edit-form">
+            {% csrf_token %}
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">계절</label>
+                    <select name="season" class="w-full px-3 py-2 border border-gray-200 text-sm">
+                        <option value="">변경 안함</option>
+                        <option value="봄">봄</option>
+                        <option value="여름">여름</option>
+                        <option value="가을">가을</option>
+                        <option value="겨울">겨울</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">나라</label>
+                    <select name="zone" id="bulk-zone-select" class="w-full px-3 py-2 border border-gray-200 text-sm">
+                        <option value="">변경 안함</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">촬영일</label>
+                    <input type="date" name="taken_at" class="w-full px-3 py-2 border border-gray-200 text-sm" />
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">태그 추가</label>
+                    <input type="text" name="tags" placeholder="쉼표로 구분" class="w-full px-3 py-2 border border-gray-200 text-sm" />
+                    <p class="text-xs text-gray-500 mt-1">기존 태그에 추가됩니다</p>
+                </div>
+            </div>
+            
+            <div id="bulk-edit-error" class="text-xs text-red-500 mt-3 hidden"></div>
+            <div id="bulk-edit-success" class="text-xs text-green-600 mt-3 hidden"></div>
+            
+            <div class="flex gap-2 mt-6">
+                <button type="submit" class="px-4 py-2 bg-gray-900 text-white text-xs uppercase tracking-widest">완료</button>
+                <button type="button" id="bulk-edit-cancel" class="px-4 py-2 border text-xs uppercase tracking-widest">취소</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script>
     const uploadToggle = document.getElementById('upload-toggle');
@@ -375,6 +428,174 @@
     function hideZoneMessages() {
         zoneError.classList.add('hidden');
         zoneSuccess.classList.add('hidden');
+    }
+
+    // ===== 다중 수정 기능 =====
+    const bulkEditToggle = document.getElementById('bulk-edit-toggle');
+    const bulkEditModal = document.getElementById('bulk-edit-modal');
+    const bulkEditForm = document.getElementById('bulk-edit-form');
+    const bulkEditCancel = document.getElementById('bulk-edit-cancel');
+    const bulkZoneSelect = document.getElementById('bulk-zone-select');
+    const selectedCountSpan = document.getElementById('selected-count');
+    const bulkEditError = document.getElementById('bulk-edit-error');
+    const bulkEditSuccess = document.getElementById('bulk-edit-success');
+    const photoCheckboxes = document.querySelectorAll('.photo-checkbox');
+
+    let bulkEditMode = false;
+    const originalButtonText = '다중수정';
+    const selectingButtonText = '선택완료';
+
+    // 다중수정 버튼 클릭
+    if (bulkEditToggle) {
+        bulkEditToggle.addEventListener('click', () => {
+            if (!bulkEditMode) {
+                // 다중수정 모드 활성화
+                bulkEditMode = true;
+                bulkEditToggle.classList.add('bg-gray-900', 'text-white');
+                bulkEditToggle.textContent = selectingButtonText;
+                photoCheckboxes.forEach(cb => cb.classList.remove('hidden'));
+                updateSelectedCount();
+            } else {
+                // 선택완료 버튼 클릭 - 모달 표시
+                const checkedCount = document.querySelectorAll('.photo-checkbox:checked').length;
+                if (checkedCount === 0) {
+                    alert('사진을 선택해주세요.');
+                    return;
+                }
+                // 모달 표시
+                if (bulkEditModal) {
+                    bulkEditModal.classList.remove('hidden');
+                    loadZonesForBulkEdit();
+                }
+            }
+        });
+    }
+
+    // 체크박스 상태 변경 시 선택 개수 업데이트
+    photoCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateSelectedCount);
+    });
+
+    function updateSelectedCount() {
+        const checkedCount = document.querySelectorAll('.photo-checkbox:checked').length;
+        if (selectedCountSpan) {
+            selectedCountSpan.textContent = checkedCount;
+        }
+        
+        // 선택된 개수에 따라 버튼 텍스트 업데이트
+        if (bulkEditToggle && bulkEditMode) {
+            if (checkedCount > 0) {
+                bulkEditToggle.textContent = `${selectingButtonText} (${checkedCount}장)`;
+            } else {
+                bulkEditToggle.textContent = selectingButtonText;
+            }
+        }
+    }
+
+    // 다중수정용 Zone 목록 로드
+    function loadZonesForBulkEdit() {
+        if (!bulkZoneSelect) return;
+        
+        fetch('{% url "portfolio:get_zones" %}')
+            .then(response => response.json())
+            .then(data => {
+                // 기존 옵션 유지하고 Zone만 추가
+                const currentValue = bulkZoneSelect.value;
+                bulkZoneSelect.innerHTML = '<option value="">변경 안함</option>';
+                
+                data.zones.forEach(zone => {
+                    const option = document.createElement('option');
+                    option.value = zone.name;
+                    option.textContent = zone.name;
+                    bulkZoneSelect.appendChild(option);
+                });
+                
+                bulkZoneSelect.value = currentValue;
+            })
+            .catch(error => console.error('Zone 로드 실패:', error));
+    }
+
+    // 모달 취소 버튼
+    if (bulkEditCancel) {
+        bulkEditCancel.addEventListener('click', () => {
+            bulkEditModal.classList.add('hidden');
+            // 체크박스는 유지하고 모달만 닫기
+        });
+    }
+
+    // 모달 바깥 클릭 시 닫기
+    if (bulkEditModal) {
+        bulkEditModal.addEventListener('click', (e) => {
+            if (e.target === bulkEditModal) {
+                bulkEditModal.classList.add('hidden');
+            }
+        });
+    }
+
+    // 다중 수정 폼 제출
+    if (bulkEditForm) {
+        bulkEditForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const checkedBoxes = document.querySelectorAll('.photo-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                showBulkEditError('사진을 선택해주세요.');
+                return;
+            }
+            
+            const photoIds = Array.from(checkedBoxes).map(cb => cb.dataset.photoId);
+            const formData = new FormData(bulkEditForm);
+            
+            // photo_ids 배열 추가
+            photoIds.forEach(id => formData.append('photo_ids[]', id));
+            
+            hideBulkEditMessages();
+            
+            fetch('{% url "portfolio:bulk_edit_photos" %}', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showBulkEditSuccess(data.message);
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showBulkEditError(data.error || '수정에 실패했습니다.');
+                    }
+                })
+                .catch(error => {
+                    console.error('다중 수정 실패:', error);
+                    showBulkEditError('네트워크 오류가 발생했습니다.');
+                });
+        });
+    }
+
+    function showBulkEditError(message) {
+        if (bulkEditError) {
+            bulkEditError.textContent = message;
+            bulkEditError.classList.remove('hidden');
+        }
+        if (bulkEditSuccess) {
+            bulkEditSuccess.classList.add('hidden');
+        }
+    }
+
+    function showBulkEditSuccess(message) {
+        if (bulkEditSuccess) {
+            bulkEditSuccess.textContent = message;
+            bulkEditSuccess.classList.remove('hidden');
+        }
+        if (bulkEditError) {
+            bulkEditError.classList.add('hidden');
+        }
+    }
+
+    function hideBulkEditMessages() {
+        if (bulkEditError) bulkEditError.classList.add('hidden');
+        if (bulkEditSuccess) bulkEditSuccess.classList.add('hidden');
     }
 </script>
 {% endblock %}

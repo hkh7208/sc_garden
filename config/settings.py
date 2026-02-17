@@ -12,9 +12,13 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# .env 파일 로드
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -24,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-$bbc&i-r1gt#kcyf!*4=hdb_c+30k7ef#h!^@!&70b$f=cg!v1'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['jakesto.synology.me', 'localhost','127.0.0.1','192.168.0.250']
 
@@ -74,13 +78,21 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# 개발 환경에서는 로컬 DB, 프로덕션에서는 NAS DB 사용
+if DEBUG:
+    # 개발 환경 (로컬 DB)
+    DEFAULT_DB_HOST = '192.168.0.107'
+else:
+    # 프로덕션 환경 (NAS DB - Synology)
+    DEFAULT_DB_HOST = 'jakesto.synology.me'
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.environ.get('MARIADB_NAME', 'sc_garden'),
         'USER': os.environ.get('MARIADB_USER', 'sc_garden_user'),
         'PASSWORD': os.environ.get('MARIADB_PASSWORD', 'Sc_Garden!2026'),
-        'HOST': os.environ.get('MARIADB_HOST', '192.168.0.250'),
+        'HOST': os.environ.get('MARIADB_HOST', DEFAULT_DB_HOST),
         'PORT': os.environ.get('MARIADB_PORT', '3306'),
         'OPTIONS': {
             'charset': 'utf8mb4',

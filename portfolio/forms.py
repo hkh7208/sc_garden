@@ -50,3 +50,16 @@ class PhotoEditForm(forms.Form):
 		required=False,
 		widget=forms.DateInput(attrs={'type': 'date'}),
 	)
+
+
+class BulkEditForm(forms.Form):
+	season = forms.ChoiceField(choices=SEASON_CHOICES, required=False)
+	zone = forms.ChoiceField(choices=ZONE_CHOICES, required=False)
+	tags = forms.CharField(
+		required=False,
+		help_text='쉼표로 구분해 입력 (기존 태그에 추가됩니다)',
+	)
+	taken_at = forms.DateField(
+		required=False,
+		widget=forms.DateInput(attrs={'type': 'date'}),
+	)
