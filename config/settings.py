@@ -28,11 +28,9 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = 'django-insecure-$bbc&i-r1gt#kcyf!*4=hdb_c+30k7ef#h!^@!&70b$f=cg!v1'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# ALLOWED_HOSTS = ['jakesto.synology.me', 'localhost','127.0.0.1','192.168.0.250']
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['jakesto.synology.me', 'localhost', '127.0.0.1', '192.168.0.250', '192.168.0.*']
 
 # Application definition
 
@@ -137,15 +135,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # 만약 이전에 만든 static 폴더가 따로 있다면 아래와 같이 추가할 수 있습니다.
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
-MEDIA_URL = 'media/'
-# MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
