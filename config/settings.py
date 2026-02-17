@@ -28,7 +28,8 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = 'django-insecure-$bbc&i-r1gt#kcyf!*4=hdb_c+30k7ef#h!^@!&70b$f=cg!v1'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+# DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = True
 
 # ALLOWED_HOSTS = ['jakesto.synology.me', 'localhost','127.0.0.1','192.168.0.250']
 ALLOWED_HOSTS = ['*']
