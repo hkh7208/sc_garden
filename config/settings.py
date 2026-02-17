@@ -84,7 +84,7 @@ if DEBUG:
     DEFAULT_DB_HOST = '192.168.0.107'
 else:
     # 프로덕션 환경 (NAS DB - Synology)
-    DEFAULT_DB_HOST = 'jakesto.synology.me'
+    DEFAULT_DB_HOST = '192.168.0.250'
 
 DATABASES = {
     'default': {
