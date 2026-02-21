@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from config.runtime_profile import detect_runtime_profile
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,7 +31,21 @@ SECRET_KEY = 'django-insecure-$bbc&i-r1gt#kcyf!*4=hdb_c+30k7ef#h!^@!&70b$f=cg!v1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['jakesto.synology.me', 'localhost', '127.0.0.1', '192.168.0.250', '192.168.0.*']
+DEFAULT_ALLOWED_HOSTS = ['jakesto.synology.me', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('ALLOWED_HOSTS', ','.join(DEFAULT_ALLOWED_HOSTS)).split(',')
+    if host.strip()
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        'CSRF_TRUSTED_ORIGINS',
+        'https://jakesto.synology.me,http://localhost,http://127.0.0.1',
+    ).split(',')
+    if origin.strip()
+]
 
 # Application definition
 
@@ -46,6 +61,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise 미들웨어
+    'config.db_routing.HostDatabaseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -78,27 +95,56 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# 개발 환경에서는 로컬 DB, 프로덕션에서는 NAS DB 사용
-if DEBUG:
-    # 개발 환경 (로컬 DB)
-    DEFAULT_DB_HOST = '192.168.0.107'
+# DB 호스트 결정
+# - DB_HOST_MODE=local: 로컬 DB(192.168.0.107) 강제
+# - DB_HOST_MODE=nas: NAS DB(192.168.0.250) 강제
+# - 미지정: 머신 프로필 자동 감지(local/nas)
+runtime_profile = detect_runtime_profile()
+db_host_mode = os.environ.get('DB_HOST_MODE', '').strip().lower() or runtime_profile
+LOCAL_DB_HOST = os.environ.get('MARIADB_LOCAL_HOST', '192.168.0.107')
+NAS_DB_HOST = os.environ.get('MARIADB_NAS_HOST', '192.168.0.250')
+
+if db_host_mode == 'local':
+    DEFAULT_DB_HOST = LOCAL_DB_HOST
+elif db_host_mode == 'nas':
+    DEFAULT_DB_HOST = NAS_DB_HOST
+elif DEBUG:
+    DEFAULT_DB_HOST = LOCAL_DB_HOST
 else:
-    # 프로덕션 환경 (NAS DB - Synology)
-    DEFAULT_DB_HOST = '192.168.0.250'
+    DEFAULT_DB_HOST = NAS_DB_HOST
+
+db_name = os.environ.get('MARIADB_NAME', 'sc_garden')
+db_user = os.environ.get('MARIADB_USER', 'sc_garden_user')
+db_password = os.environ.get('MARIADB_PASSWORD', 'Sc_Garden!2026')
+db_port = os.environ.get('MARIADB_PORT', '3306')
+
+db_common = {
+    'ENGINE': 'django.db.backends.mysql',
+    'NAME': db_name,
+    'USER': db_user,
+    'PASSWORD': db_password,
+    'PORT': db_port,
+    'OPTIONS': {
+        'charset': 'utf8mb4',
+    },
+}
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('MARIADB_NAME', 'sc_garden'),
-        'USER': os.environ.get('MARIADB_USER', 'sc_garden_user'),
-        'PASSWORD': os.environ.get('MARIADB_PASSWORD', 'Sc_Garden!2026'),
+        **db_common,
         'HOST': os.environ.get('MARIADB_HOST', DEFAULT_DB_HOST),
-        'PORT': os.environ.get('MARIADB_PORT', '3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
+    },
+    'local': {
+        **db_common,
+        'HOST': LOCAL_DB_HOST,
+    },
+    'nas': {
+        **db_common,
+        'HOST': NAS_DB_HOST,
     }
 }
+
+DATABASE_ROUTERS = ['config.db_routing.HostDatabaseRouter']
 
 
 # Password validation
@@ -137,6 +183,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# WhiteNoise 설정 (프로덕션에서 정적 파일 압축 및 캐시)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # 만약 이전에 만든 static 폴더가 따로 있다면 아래와 같이 추가할 수 있습니다.
 STATICFILES_DIRS = [

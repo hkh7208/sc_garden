@@ -27,5 +27,7 @@ urlpatterns = [
     path('', include('portfolio.urls')),
 ]
 
+# 프로덕션 환경에서도 미디어 파일 서빙 (DEBUG 상태와 무관)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

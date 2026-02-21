@@ -1,10 +1,13 @@
 from django.db import models
 from django.utils import timezone
 
+from config.db_routing import get_current_db_alias
+
 
 def photo_upload_path(instance, filename):
 	now = timezone.now()
-	return f"photos/{now.year}/{now.month:02d}/{filename}"
+	db_alias = get_current_db_alias()
+	return f"photos/{db_alias}/{now.year}/{now.month:02d}/{filename}"
 
 
 class Season(models.Model):
