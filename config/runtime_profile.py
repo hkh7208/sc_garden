@@ -25,10 +25,27 @@ def _local_ipv4_addresses() -> Set[str]:
     return addresses
 
 
+def _looks_like_nas_runtime() -> bool:
+    markers_raw = os.environ.get('NAS_RUNTIME_MARKERS', '/volume1,/var/services')
+    markers = [item.strip() for item in markers_raw.split(',') if item.strip()]
+    for marker in markers:
+        if os.path.exists(marker):
+            return True
+
+    hostname = socket.gethostname().lower()
+    if 'synology' in hostname or 'diskstation' in hostname:
+        return True
+
+    return False
+
+
 def detect_runtime_profile() -> str:
     profile = os.environ.get('SERVER_PROFILE', '').strip().lower()
     if profile in {'local', 'nas'}:
         return profile
+
+    if _looks_like_nas_runtime():
+        return 'nas'
 
     nas_ip = os.environ.get('NAS_SERVER_IP', '192.168.0.250').strip()
     if nas_ip and nas_ip in _local_ipv4_addresses():

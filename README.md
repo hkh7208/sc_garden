@@ -26,6 +26,11 @@ FLUSH PRIVILEGES;
 - MARIADB_NAS_HOST (기본: 192.168.0.250)
 - SERVER_PROFILE (`local` 또는 `nas`, 미설정 시 자동 감지)
 - NAS_SERVER_IP (기본: 192.168.0.250)
+- NAS_RUNTIME_MARKERS (기본: `/volume1,/var/services`, 해당 경로 존재 시 nas로 판단)
+
+환경 파일 템플릿:
+- 로컬 개발: `.env.local.example` → `.env`로 복사
+- NAS 배포: `.env.nas.example` → `.env`로 복사
 
 ## 설치
 ```
@@ -57,6 +62,24 @@ G:/VS_code/sc_garden/.venv/Scripts/python.exe manage.py run_auto_server
 - 로컬 개발 PC(기본): `127.0.0.1:8000` + local DB(`192.168.0.107`)
 - NAS 서버 IP가 `192.168.0.250`인 환경: `0.0.0.0:8080` + nas DB(`192.168.0.250`)
 - GitHub 동기화 후에도 동일 명령(`run_auto_server`)으로 자동 적용
+
+자동 감지가 애매한 환경(컨테이너 등)에서는 NAS 서버의 `.env`에 아래처럼 고정하세요:
+```
+SERVER_PROFILE=nas
+```
+
+기존 공용 이미지 경로 이관(최초 1회 권장):
+```
+# 1) 로컬 DB 기준 변경 대상 확인
+G:/VS_code/sc_garden/.venv/Scripts/python.exe manage.py migrate_photo_storage_paths --target local
+
+# 2) 로컬 DB 실제 반영
+G:/VS_code/sc_garden/.venv/Scripts/python.exe manage.py migrate_photo_storage_paths --target local --commit
+
+# 3) NAS 서버에서도 동일하게(target만 nas)
+python manage.py migrate_photo_storage_paths --target nas
+python manage.py migrate_photo_storage_paths --target nas --commit
+```
 
 ## Tailwind CSS
 템플릿에서 CDN 방식으로 Tailwind CSS를 사용합니다. 필요 시 빌드 방식으로 전환 가능합니다.
