@@ -5,6 +5,23 @@
 {% block content %}
 <section class="relative">
     <style>
+        .season-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+        .season-bg.spring {
+            background: linear-gradient(180deg, rgba(254, 242, 248, 0.95) 0%, rgba(255, 247, 237, 0.9) 100%);
+        }
+        .season-bg.summer {
+            background: linear-gradient(180deg, rgba(239, 246, 255, 0.95) 0%, rgba(224, 242, 254, 0.9) 100%);
+        }
+        .season-bg.autumn {
+            background: linear-gradient(180deg, rgba(255, 247, 237, 0.95) 0%, rgba(254, 243, 199, 0.9) 100%);
+        }
+        .season-bg.winter {
+            background: linear-gradient(180deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.95) 100%);
+        }
         .triple-carousel {
             height: 68vh;
         }
@@ -51,8 +68,93 @@
             .carousel-item.is-left { transform: translate(-140%, -50%) scale(0.7); }
             .carousel-item.is-right { transform: translate(40%, -50%) scale(0.7); }
         }
+        .season-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 5;
+        }
+        .season-particle {
+            position: absolute;
+            top: -10%;
+            border-radius: 9999px;
+            opacity: 0.7;
+            animation: seasonal-fall linear infinite;
+        }
+        .season-particle.spring-petal {
+            border-radius: 70% 30% 65% 35%;
+            background: linear-gradient(145deg, rgba(251, 207, 232, 0.95), rgba(244, 114, 182, 0.6));
+            box-shadow: inset -1px -1px 0 rgba(255, 255, 255, 0.55);
+        }
+        .season-particle.autumn-leaf {
+            border-radius: 10% 80% 10% 80%;
+            background: linear-gradient(155deg, rgba(253, 186, 116, 0.95), rgba(234, 88, 12, 0.72));
+            transform-origin: 50% 70%;
+        }
+        .season-particle.autumn-leaf::after {
+            content: '';
+            position: absolute;
+            left: 48%;
+            top: 82%;
+            width: 2px;
+            height: 8px;
+            background: rgba(120, 53, 15, 0.65);
+            border-radius: 9999px;
+        }
+        .season-particle.winter-snow {
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+        .season-particle.winter-snow::before {
+            content: '❄';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(148, 163, 184, 0.95);
+            text-shadow: 0 0 2px rgba(255, 255, 255, 0.8), 0 0 6px rgba(148, 163, 184, 0.35);
+            font-size: 1em;
+            line-height: 1;
+        }
+        .season-overlay.summer .season-particle {
+            display: none;
+        }
+        .season-wave {
+            position: absolute;
+            left: -10%;
+            bottom: 0;
+            width: 120%;
+            border-radius: 50% 50% 0 0;
+            opacity: 0.45;
+            animation: wave-drift 9s ease-in-out infinite;
+            display: none;
+        }
+        .season-overlay.summer .season-wave {
+            display: block;
+        }
+        .season-wave.wave-1 { height: 17%; background: rgba(191, 219, 254, 0.45); }
+        .season-wave.wave-2 { height: 12%; background: rgba(147, 197, 253, 0.4); animation-delay: -2.4s; }
+        .season-wave.wave-3 { height: 8%; background: rgba(96, 165, 250, 0.35); animation-delay: -4.8s; }
+        @keyframes seasonal-fall {
+            0% { transform: translate3d(0, -5vh, 0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.85; }
+            100% { transform: translate3d(40px, 78vh, 0) rotate(300deg); opacity: 0; }
+        }
+        @keyframes wave-drift {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            50% { transform: translateX(-4%) translateY(8px); }
+        }
     </style>
-    <div class="triple-carousel overflow-hidden bg-gray-100">
+    <div id="season-bg" class="season-bg" aria-hidden="true"></div>
+    <div class="triple-carousel overflow-hidden bg-transparent relative z-10">
+        <div id="season-overlay" class="season-overlay" aria-hidden="true">
+            <div class="season-wave wave-1"></div>
+            <div class="season-wave wave-2"></div>
+            <div class="season-wave wave-3"></div>
+        </div>
         <div class="h-full w-full relative">
             {% if recent_photos %}
                 {% for photo in recent_photos %}
@@ -106,7 +208,62 @@
 <script>
     const carouselItems = Array.from(document.querySelectorAll('.carousel-item'));
     const caption = document.getElementById('carousel-caption');
+    const seasonOverlay = document.getElementById('season-overlay');
+    const seasonBg = document.getElementById('season-bg');
     let currentIndex = 0;
+
+    const getCurrentSeason = () => {
+        const month = new Date().getMonth() + 1;
+        if ([3, 4, 5].includes(month)) return 'spring';
+        if ([6, 7, 8].includes(month)) return 'summer';
+        if ([9, 10, 11].includes(month)) return 'autumn';
+        return 'winter';
+    };
+
+    const createParticles = (season) => {
+        if (!seasonOverlay) {
+            return;
+        }
+        seasonOverlay.classList.remove('spring', 'summer', 'autumn', 'winter');
+        seasonOverlay.classList.add(season);
+
+        seasonOverlay.querySelectorAll('.season-particle').forEach((node) => node.remove());
+        if (season === 'summer') {
+            return;
+        }
+
+        const config = {
+            spring: { min: 8, max: 14, count: 16, shapeClass: 'spring-petal' },
+            autumn: { min: 9, max: 15, count: 15, shapeClass: 'autumn-leaf' },
+            winter: { min: 4, max: 9, count: 20, shapeClass: 'winter-snow' },
+        }[season];
+
+        for (let index = 0; index < config.count; index += 1) {
+            const particle = document.createElement('span');
+            particle.className = `season-particle ${config.shapeClass}`;
+            const size = config.min + Math.random() * (config.max - config.min);
+            const duration = 7 + Math.random() * 8;
+            const delay = -Math.random() * duration;
+
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            if (season === 'winter') {
+                particle.style.fontSize = `${(size + 6) * 2}px`;
+            }
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.animationDuration = `${duration}s`;
+            particle.style.animationDelay = `${delay}s`;
+            seasonOverlay.appendChild(particle);
+        }
+    };
+
+    const applySeasonBackground = (season) => {
+        if (!seasonBg) {
+            return;
+        }
+        seasonBg.classList.remove('spring', 'summer', 'autumn', 'winter');
+        seasonBg.classList.add(season);
+    };
 
     const applyClasses = () => {
         const total = carouselItems.length;
@@ -144,5 +301,9 @@
             applyClasses();
         }, 4500);
     }
+
+    const activeSeason = getCurrentSeason();
+    applySeasonBackground(activeSeason);
+    createParticles(activeSeason);
 </script>
 {% endblock %}
