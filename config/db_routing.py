@@ -1,10 +1,11 @@
 import os
 from contextvars import ContextVar
+from typing import Optional, Set
 
-_current_db_alias: ContextVar[str | None] = ContextVar('current_db_alias', default=None)
+_current_db_alias: ContextVar[Optional[str]] = ContextVar('current_db_alias', default=None)
 
 
-def _parse_env_list(value: str) -> set[str]:
+def _parse_env_list(value: str) -> Set[str]:
     return {item.strip().lower() for item in value.split(',') if item.strip()}
 
 

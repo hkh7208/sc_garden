@@ -1,9 +1,10 @@
 import os
 import socket
+from typing import Set
 
 
-def _local_ipv4_addresses() -> set[str]:
-    addresses: set[str] = {'127.0.0.1'}
+def _local_ipv4_addresses() -> Set[str]:
+    addresses: Set[str] = {'127.0.0.1'}
 
     try:
         _, _, ip_list = socket.gethostbyname_ex(socket.gethostname())
