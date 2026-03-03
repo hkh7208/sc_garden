@@ -201,8 +201,15 @@
 
     <div class="mt-16">
         {% if photo_groups %}
+            <div class="flex flex-wrap gap-2 mb-8">
+                {% for group in photo_groups %}
+                    <a href="#season-year-{{ group.year }}" data-season-year-nav="{{ group.year }}" class="px-3 py-1 text-xs border rounded-full border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900">
+                        {{ group.year }}년 <span class="text-[10px]">({{ group.photos|length }})</span>
+                    </a>
+                {% endfor %}
+            </div>
             {% for group in photo_groups %}
-                <div class="mb-12">
+                <div id="season-year-{{ group.year }}" class="mb-12 scroll-mt-24">
                     <div class="flex items-center gap-4 mb-6">
                         <div class="text-lg title-font">{{ group.year }}</div>
                         <div class="h-px bg-gray-200 flex-1"></div>
@@ -226,7 +233,7 @@
         <div class="relative mx-auto flex h-full w-full max-w-6xl items-center justify-center">
             <button id="season-viewer-prev" type="button" class="absolute left-0 md:left-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="이전 사진">‹</button>
             <button id="season-viewer-close" type="button" class="absolute right-0 top-0 md:right-2 md:top-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="닫기">×</button>
-            <img id="season-viewer-image" src="" alt="" class="w-[88vw] md:w-[68vw] max-w-[960px] max-h-[60vh] object-contain rounded-sm" />
+            <img id="season-viewer-image" src="" alt="" class="w-[96vw] md:w-[92vw] max-w-[1440px] max-h-[90vh] object-contain rounded-sm" />
             <button id="season-viewer-next" type="button" class="absolute right-0 md:right-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="다음 사진">›</button>
             <div id="season-viewer-caption" class="absolute left-1/2 -translate-x-1/2 bottom-2 text-xs text-white/90"></div>
         </div>
@@ -243,7 +250,20 @@
     const seasonViewerClose = document.getElementById('season-viewer-close');
     const seasonViewerCaption = document.getElementById('season-viewer-caption');
     const seasonImages = Array.from(document.querySelectorAll('img[data-season-viewable="true"]'));
+    const seasonYearNavButtons = Array.from(document.querySelectorAll('[data-season-year-nav]'));
+    const seasonYearSections = Array.from(document.querySelectorAll('[id^="season-year-"]'));
     let seasonImageIndex = -1;
+
+    const setActiveSeasonYear = (year) => {
+        seasonYearNavButtons.forEach((button) => {
+            const isActive = button.dataset.seasonYearNav === String(year);
+            button.classList.toggle('bg-gray-900', isActive);
+            button.classList.toggle('text-white', isActive);
+            button.classList.toggle('border-gray-900', isActive);
+            button.classList.toggle('text-gray-600', !isActive);
+            button.classList.toggle('border-gray-300', !isActive);
+        });
+    };
 
     const createParticles = (season) => {
         if (!seasonOverlay) {
@@ -346,6 +366,29 @@
 
     applySeasonBackground(activeSeason);
     createParticles(activeSeason);
+
+    if (seasonYearNavButtons.length && seasonYearSections.length) {
+        setActiveSeasonYear(seasonYearSections[0].id.replace('season-year-', ''));
+        seasonYearNavButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                setActiveSeasonYear(button.dataset.seasonYearNav);
+            });
+        });
+
+        const seasonYearObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    setActiveSeasonYear(entry.target.id.replace('season-year-', ''));
+                }
+            });
+        }, {
+            root: null,
+            rootMargin: '-30% 0px -55% 0px',
+            threshold: 0.01,
+        });
+
+        seasonYearSections.forEach((section) => seasonYearObserver.observe(section));
+    }
 
     seasonImages.forEach((imageElement) => {
         imageElement.setAttribute('tabindex', '0');

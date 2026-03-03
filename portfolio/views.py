@@ -128,6 +128,7 @@ def zones(request):
 	current_zone = None
 	current_zone_id = None
 	current_photos = []
+	current_photo_groups = []
 	
 	if selected_zone == 'unregistered':
 		current_zone = None
@@ -144,6 +145,15 @@ def zones(request):
 		# 기본으로 미등록 표시
 		current_zone = None
 		current_photos = list(unregistered_photos)
+
+	# 연도별 그룹 생성 (taken_at 우선, 없으면 created_at 사용)
+	current_year = None
+	for photo in current_photos:
+		year = photo.taken_at.year if photo.taken_at else photo.created_at.year
+		if current_year != year:
+			current_photo_groups.append({'year': year, 'photos': []})
+			current_year = year
+		current_photo_groups[-1]['photos'].append(photo)
 	
 	return render(request, 'portfolio/zones.html', {
 		'zones_data': zones_data,
@@ -151,6 +161,7 @@ def zones(request):
 		'selected_zone_id': selected_zone if selected_zone else 'unregistered',
 		'current_zone': current_zone,
 		'current_photos': current_photos,
+		'current_photo_groups': current_photo_groups,
 	})
 
 

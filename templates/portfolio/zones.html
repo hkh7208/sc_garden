@@ -25,35 +25,52 @@
     </div>
 
     <!-- 현재 선택된 zone의 사진들 -->
-    {% if current_photos %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {% for photo in current_photos %}
-                <article>
-                    <div class="bg-gray-100 rounded-sm overflow-hidden">
-                        <img src="{{ photo.image.url }}" alt="{{ photo.title }}" data-zoomable="true" class="w-full h-56 object-cover cursor-zoom-in" />
-                    </div>
-                    <div class="mt-3">
-                        <h3 class="text-sm font-medium">{{ photo.title }}</h3>
-                        {% if photo.season or photo.zone %}
-                            <p class="text-xs text-gray-500 mt-1">
-                                {% if photo.season %}{{ photo.season.name }}{% endif %}
-                                {% if photo.zone and photo.season %}·{% endif %}
-                                {% if photo.zone %}{{ photo.zone.name }}{% endif %}
-                            </p>
-                        {% endif %}
-                        {% if photo.taken_at %}
-                            <p class="text-[10px] text-gray-400 mt-1">
-                                {{ photo.taken_at|date:"Y년 m월 d일" }}
-                            </p>
-                        {% else %}
-                            <p class="text-[10px] text-gray-400 mt-1">
-                                {{ photo.created_at|date:"Y년 m월 d일" }}
-                            </p>
-                        {% endif %}
-                    </div>
-                </article>
+    {% if current_photo_groups %}
+        <div class="flex flex-wrap gap-2 mb-8">
+            {% for group in current_photo_groups %}
+                <a href="#zone-year-{{ group.year }}" data-zone-year-nav="{{ group.year }}" class="px-3 py-1 text-xs border rounded-full border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900">
+                    {{ group.year }}년 <span class="text-[10px]">({{ group.photos|length }})</span>
+                </a>
             {% endfor %}
         </div>
+
+        {% for group in current_photo_groups %}
+            <div id="zone-year-{{ group.year }}" class="mb-12 scroll-mt-24">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="text-lg title-font">{{ group.year }}</div>
+                    <div class="h-px bg-gray-200 flex-1"></div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {% for photo in group.photos %}
+                        <article>
+                            <div class="bg-gray-100 rounded-sm overflow-hidden">
+                                <img src="{{ photo.image.url }}" alt="{{ photo.title }}" data-zone-viewable="true" class="w-full h-56 object-cover cursor-zoom-in" />
+                            </div>
+                            <div class="mt-3">
+                                <h3 class="text-sm font-medium">{{ photo.title }}</h3>
+                                {% if photo.season or photo.zone %}
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        {% if photo.season %}{{ photo.season.name }}{% endif %}
+                                        {% if photo.zone and photo.season %}·{% endif %}
+                                        {% if photo.zone %}{{ photo.zone.name }}{% endif %}
+                                    </p>
+                                {% endif %}
+                                {% if photo.taken_at %}
+                                    <p class="text-[10px] text-gray-400 mt-1">
+                                        {{ photo.taken_at|date:"Y년 m월 d일" }}
+                                    </p>
+                                {% else %}
+                                    <p class="text-[10px] text-gray-400 mt-1">
+                                        {{ photo.created_at|date:"Y년 m월 d일" }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
     {% else %}
         <div class="text-sm text-gray-400 text-center py-12">
             {% if selected_zone_id == 'unregistered' %}
@@ -64,4 +81,162 @@
         </div>
     {% endif %}
 </section>
+
+<div id="zone-viewer" class="fixed inset-0 z-[80] hidden bg-black/80 p-4 md:p-8" aria-hidden="true" role="dialog" aria-label="나라별 정원 감상 모드">
+    <div class="relative mx-auto flex h-full w-full max-w-6xl items-center justify-center">
+        <button id="zone-viewer-prev" type="button" class="absolute left-0 md:left-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="이전 사진">‹</button>
+        <button id="zone-viewer-close" type="button" class="absolute right-0 top-0 md:right-2 md:top-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="닫기">×</button>
+        <img id="zone-viewer-image" src="" alt="" class="w-[96vw] md:w-[92vw] max-w-[1440px] max-h-[90vh] object-contain rounded-sm" />
+        <button id="zone-viewer-next" type="button" class="absolute right-0 md:right-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="다음 사진">›</button>
+        <div id="zone-viewer-caption" class="absolute left-1/2 -translate-x-1/2 bottom-2 text-xs text-white/90"></div>
+    </div>
+</div>
+
+<script>
+    const zoneViewer = document.getElementById('zone-viewer');
+    const zoneViewerImage = document.getElementById('zone-viewer-image');
+    const zoneViewerPrev = document.getElementById('zone-viewer-prev');
+    const zoneViewerNext = document.getElementById('zone-viewer-next');
+    const zoneViewerClose = document.getElementById('zone-viewer-close');
+    const zoneViewerCaption = document.getElementById('zone-viewer-caption');
+    const zoneImages = Array.from(document.querySelectorAll('img[data-zone-viewable="true"]'));
+    const zoneYearNavButtons = Array.from(document.querySelectorAll('[data-zone-year-nav]'));
+    const zoneYearSections = Array.from(document.querySelectorAll('[id^="zone-year-"]'));
+    let zoneImageIndex = -1;
+
+    const setActiveZoneYear = (year) => {
+        zoneYearNavButtons.forEach((button) => {
+            const isActive = button.dataset.zoneYearNav === String(year);
+            button.classList.toggle('bg-gray-900', isActive);
+            button.classList.toggle('text-white', isActive);
+            button.classList.toggle('border-gray-900', isActive);
+            button.classList.toggle('text-gray-600', !isActive);
+            button.classList.toggle('border-gray-300', !isActive);
+        });
+    };
+
+    const renderZoneViewer = () => {
+        if (!zoneViewerImage || zoneImageIndex < 0 || zoneImageIndex >= zoneImages.length) {
+            return;
+        }
+        const currentImage = zoneImages[zoneImageIndex];
+        zoneViewerImage.src = currentImage.currentSrc || currentImage.src;
+        zoneViewerImage.alt = currentImage.alt || '나라별 정원 사진';
+        if (zoneViewerCaption) {
+            zoneViewerCaption.textContent = `${zoneImageIndex + 1} / ${zoneImages.length} · ${currentImage.alt || '나라별 정원 사진'}`;
+        }
+        const hideNav = zoneImages.length <= 1;
+        if (zoneViewerPrev) {
+            zoneViewerPrev.classList.toggle('hidden', hideNav);
+        }
+        if (zoneViewerNext) {
+            zoneViewerNext.classList.toggle('hidden', hideNav);
+        }
+    };
+
+    const openZoneViewer = (targetImage) => {
+        if (!zoneViewer || !targetImage) {
+            return;
+        }
+        zoneImageIndex = zoneImages.indexOf(targetImage);
+        if (zoneImageIndex < 0) {
+            return;
+        }
+        renderZoneViewer();
+        zoneViewer.classList.remove('hidden');
+        zoneViewer.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    const closeZoneViewer = () => {
+        if (!zoneViewer || !zoneViewerImage) {
+            return;
+        }
+        zoneViewer.classList.add('hidden');
+        zoneViewer.setAttribute('aria-hidden', 'true');
+        zoneViewerImage.src = '';
+        zoneImageIndex = -1;
+        document.body.classList.remove('overflow-hidden');
+    };
+
+    const moveZoneViewer = (step) => {
+        if (!zoneViewer || zoneViewer.classList.contains('hidden') || zoneImages.length <= 1) {
+            return;
+        }
+        zoneImageIndex = (zoneImageIndex + step + zoneImages.length) % zoneImages.length;
+        renderZoneViewer();
+    };
+
+    if (zoneYearNavButtons.length && zoneYearSections.length) {
+        setActiveZoneYear(zoneYearSections[0].id.replace('zone-year-', ''));
+        zoneYearNavButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                setActiveZoneYear(button.dataset.zoneYearNav);
+            });
+        });
+
+        const zoneYearObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    setActiveZoneYear(entry.target.id.replace('zone-year-', ''));
+                }
+            });
+        }, {
+            root: null,
+            rootMargin: '-30% 0px -55% 0px',
+            threshold: 0.01,
+        });
+
+        zoneYearSections.forEach((section) => zoneYearObserver.observe(section));
+    }
+
+    zoneImages.forEach((imageElement) => {
+        imageElement.setAttribute('tabindex', '0');
+        imageElement.setAttribute('role', 'button');
+        imageElement.addEventListener('click', (event) => {
+            event.preventDefault();
+            openZoneViewer(imageElement);
+        });
+        imageElement.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openZoneViewer(imageElement);
+            }
+        });
+    });
+
+    if (zoneViewerPrev) {
+        zoneViewerPrev.addEventListener('click', () => moveZoneViewer(-1));
+    }
+    if (zoneViewerNext) {
+        zoneViewerNext.addEventListener('click', () => moveZoneViewer(1));
+    }
+    if (zoneViewerClose) {
+        zoneViewerClose.addEventListener('click', closeZoneViewer);
+    }
+    if (zoneViewer) {
+        zoneViewer.addEventListener('click', (event) => {
+            if (event.target === zoneViewer) {
+                closeZoneViewer();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (!zoneViewer || zoneViewer.classList.contains('hidden')) {
+            return;
+        }
+        if (event.key === 'Escape') {
+            closeZoneViewer();
+            return;
+        }
+        if (event.key === 'ArrowLeft') {
+            moveZoneViewer(-1);
+            return;
+        }
+        if (event.key === 'ArrowRight') {
+            moveZoneViewer(1);
+        }
+    });
+</script>
 {% endblock %}

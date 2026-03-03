@@ -189,7 +189,7 @@
         <div class="masonry">
             {% for photo in latest_photos %}
                 <article class="masonry-item">
-                    <img src="{{ photo.image.url }}" alt="{{ photo.title }}" data-zoomable="true" class="w-full h-auto rounded-sm cursor-zoom-in" />
+                    <img src="{{ photo.image.url }}" alt="{{ photo.title }}" data-home-viewable="true" class="w-full h-auto rounded-sm cursor-zoom-in" />
                     <div class="mt-3">
                         <h3 class="text-sm font-medium">{{ photo.title }}</h3>
                         <p class="text-xs text-gray-500 mt-1">
@@ -205,11 +205,29 @@
     {% endif %}
 </section>
 
+<div id="home-viewer" class="fixed inset-0 z-[80] hidden bg-black/80 p-4 md:p-8" aria-hidden="true" role="dialog" aria-label="최근 기록 감상 모드">
+    <div class="relative mx-auto flex h-full w-full max-w-6xl items-center justify-center">
+        <button id="home-viewer-prev" type="button" class="absolute left-0 md:left-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="이전 사진">‹</button>
+        <button id="home-viewer-close" type="button" class="absolute right-0 top-0 md:right-2 md:top-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="닫기">×</button>
+        <img id="home-viewer-image" src="" alt="" class="w-[96vw] md:w-[92vw] max-w-[1440px] max-h-[90vh] object-contain rounded-sm" />
+        <button id="home-viewer-next" type="button" class="absolute right-0 md:right-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="다음 사진">›</button>
+        <div id="home-viewer-caption" class="absolute left-1/2 -translate-x-1/2 bottom-2 text-xs text-white/90"></div>
+    </div>
+</div>
+
 <script>
     const carouselItems = Array.from(document.querySelectorAll('.carousel-item'));
     const caption = document.getElementById('carousel-caption');
     const seasonOverlay = document.getElementById('season-overlay');
     const seasonBg = document.getElementById('season-bg');
+    const homeViewer = document.getElementById('home-viewer');
+    const homeViewerImage = document.getElementById('home-viewer-image');
+    const homeViewerPrev = document.getElementById('home-viewer-prev');
+    const homeViewerNext = document.getElementById('home-viewer-next');
+    const homeViewerClose = document.getElementById('home-viewer-close');
+    const homeViewerCaption = document.getElementById('home-viewer-caption');
+    const homeImages = Array.from(document.querySelectorAll('img[data-home-viewable="true"]'));
+    let homeImageIndex = -1;
     let currentIndex = 0;
 
     const getCurrentSeason = () => {
@@ -265,6 +283,58 @@
         seasonBg.classList.add(season);
     };
 
+    const renderHomeViewer = () => {
+        if (!homeViewerImage || homeImageIndex < 0 || homeImageIndex >= homeImages.length) {
+            return;
+        }
+        const currentImage = homeImages[homeImageIndex];
+        homeViewerImage.src = currentImage.currentSrc || currentImage.src;
+        homeViewerImage.alt = currentImage.alt || '최근 기록 사진';
+        if (homeViewerCaption) {
+            homeViewerCaption.textContent = `${homeImageIndex + 1} / ${homeImages.length} · ${currentImage.alt || '최근 기록 사진'}`;
+        }
+        const hideNav = homeImages.length <= 1;
+        if (homeViewerPrev) {
+            homeViewerPrev.classList.toggle('hidden', hideNav);
+        }
+        if (homeViewerNext) {
+            homeViewerNext.classList.toggle('hidden', hideNav);
+        }
+    };
+
+    const openHomeViewer = (targetImage) => {
+        if (!homeViewer || !targetImage) {
+            return;
+        }
+        homeImageIndex = homeImages.indexOf(targetImage);
+        if (homeImageIndex < 0) {
+            return;
+        }
+        renderHomeViewer();
+        homeViewer.classList.remove('hidden');
+        homeViewer.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    const closeHomeViewer = () => {
+        if (!homeViewer || !homeViewerImage) {
+            return;
+        }
+        homeViewer.classList.add('hidden');
+        homeViewer.setAttribute('aria-hidden', 'true');
+        homeViewerImage.src = '';
+        homeImageIndex = -1;
+        document.body.classList.remove('overflow-hidden');
+    };
+
+    const moveHomeViewer = (step) => {
+        if (!homeViewer || homeViewer.classList.contains('hidden') || homeImages.length <= 1) {
+            return;
+        }
+        homeImageIndex = (homeImageIndex + step + homeImages.length) % homeImages.length;
+        renderHomeViewer();
+    };
+
     const applyClasses = () => {
         const total = carouselItems.length;
         if (!total) {
@@ -305,5 +375,54 @@
     const activeSeason = getCurrentSeason();
     applySeasonBackground(activeSeason);
     createParticles(activeSeason);
+
+    homeImages.forEach((imageElement) => {
+        imageElement.setAttribute('tabindex', '0');
+        imageElement.setAttribute('role', 'button');
+        imageElement.addEventListener('click', (event) => {
+            event.preventDefault();
+            openHomeViewer(imageElement);
+        });
+        imageElement.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openHomeViewer(imageElement);
+            }
+        });
+    });
+
+    if (homeViewerPrev) {
+        homeViewerPrev.addEventListener('click', () => moveHomeViewer(-1));
+    }
+    if (homeViewerNext) {
+        homeViewerNext.addEventListener('click', () => moveHomeViewer(1));
+    }
+    if (homeViewerClose) {
+        homeViewerClose.addEventListener('click', closeHomeViewer);
+    }
+    if (homeViewer) {
+        homeViewer.addEventListener('click', (event) => {
+            if (event.target === homeViewer) {
+                closeHomeViewer();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (!homeViewer || homeViewer.classList.contains('hidden')) {
+            return;
+        }
+        if (event.key === 'Escape') {
+            closeHomeViewer();
+            return;
+        }
+        if (event.key === 'ArrowLeft') {
+            moveHomeViewer(-1);
+            return;
+        }
+        if (event.key === 'ArrowRight') {
+            moveHomeViewer(1);
+        }
+    });
 </script>
 {% endblock %}
