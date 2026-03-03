@@ -107,6 +107,16 @@
         </div>
     </footer>
 
+    <div id="global-viewer" class="fixed inset-0 z-[80] hidden bg-black/80 p-4 md:p-8" aria-hidden="true" role="dialog" aria-label="사진 감상 모드">
+        <div class="relative mx-auto flex h-full w-full max-w-6xl items-center justify-center">
+            <button id="global-viewer-prev" type="button" class="absolute left-0 md:left-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="이전 사진">‹</button>
+            <button id="global-viewer-close" type="button" class="absolute right-0 top-0 md:right-2 md:top-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="닫기">×</button>
+            <img id="global-viewer-image" src="" alt="" class="w-[90vw] md:w-[76vw] max-w-[1100px] max-h-[78vh] object-contain rounded-sm" />
+            <button id="global-viewer-next" type="button" class="absolute right-0 md:right-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="다음 사진">›</button>
+            <div id="global-viewer-caption" class="absolute left-1/2 -translate-x-1/2 bottom-2 text-xs text-white/90"></div>
+        </div>
+    </div>
+
     <script>
         const menuToggle = document.getElementById('mobile-menu-toggle');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -116,135 +126,69 @@
             });
         }
 
-                const desktopSlideshowQuery = window.matchMedia('(min-width: 1024px)');
-                let slideshowWindowRef = null;
-                const getZoomImageSrc = (imageElement) => imageElement.dataset.zoomSrc || imageElement.currentSrc || imageElement.src;
+        const globalViewer = document.getElementById('global-viewer');
+        const globalViewerImage = document.getElementById('global-viewer-image');
+        const globalViewerPrev = document.getElementById('global-viewer-prev');
+        const globalViewerNext = document.getElementById('global-viewer-next');
+        const globalViewerClose = document.getElementById('global-viewer-close');
+        const globalViewerCaption = document.getElementById('global-viewer-caption');
+        const getZoomImageSrc = (imageElement) => imageElement.dataset.zoomSrc || imageElement.currentSrc || imageElement.src;
+        let globalImages = [];
+        let globalImageIndex = -1;
 
-                const buildSlideshowWindowHtml = (images, startIndex) => {
-                        const safeImages = JSON.stringify(images).replace(/</g, '\\u003c');
-                        return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>사진 슬라이드</title>
-    <style>
-        * { box-sizing: border-box; }
-        body { margin: 0; background: #0f1115; color: #fff; font-family: system-ui, -apple-system, sans-serif; }
-        .shell { min-height: 100vh; display: flex; flex-direction: column; }
-        .toolbar {
-            height: 56px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between;
-            background: rgba(0,0,0,0.45); border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        .title { font-size: 13px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60vw; }
-        .counter { font-size: 12px; opacity: 0.75; }
-        .stage { flex: 1; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 22px; }
-        .nav {
-            width: 44px; height: 44px; border: 0; border-radius: 999px; cursor: pointer;
-            background: rgba(255,255,255,0.9); color: #111; font-size: 24px; line-height: 1;
-        }
-        .nav:hover { background: #fff; }
-        .photo-wrap { width: min(68vw, 960px); max-width: 960px; }
-        .photo {
-            width: 100%; max-height: 60vh; object-fit: contain; border-radius: 6px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.35);
-        }
-        .close-btn {
-            border: 1px solid rgba(255,255,255,0.3); background: transparent; color: #fff;
-            padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
-        }
-    </style>
-</head>
-<body>
-    <div class="shell">
-        <div class="toolbar">
-            <div class="title" id="slide-title">사진 슬라이드</div>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span class="counter" id="slide-counter"></span>
-                <button class="close-btn" id="slide-close" type="button">닫기</button>
-            </div>
-        </div>
-        <div class="stage">
-            <button class="nav" id="slide-prev" type="button" aria-label="이전">‹</button>
-            <div class="photo-wrap">
-                <img id="slide-image" class="photo" src="" alt="" />
-            </div>
-            <button class="nav" id="slide-next" type="button" aria-label="다음">›</button>
-        </div>
-    </div>
-
-    <script>
-        const images = ${safeImages};
-        let index = ${startIndex};
-        const imageElement = document.getElementById('slide-image');
-        const titleElement = document.getElementById('slide-title');
-        const counterElement = document.getElementById('slide-counter');
-        const prevButton = document.getElementById('slide-prev');
-        const nextButton = document.getElementById('slide-next');
-        const closeButton = document.getElementById('slide-close');
-
-        const render = () => {
-            if (!images.length) {
+        const renderGlobalViewer = () => {
+            if (!globalViewerImage || globalImageIndex < 0 || globalImageIndex >= globalImages.length) {
                 return;
             }
-            const current = images[index];
-            imageElement.src = current.src;
-            imageElement.alt = current.alt || '확대 이미지';
-            titleElement.textContent = current.alt || '사진 슬라이드';
-            counterElement.textContent = (index + 1) + ' / ' + images.length;
-            const hideNav = images.length <= 1;
-            prevButton.style.visibility = hideNav ? 'hidden' : 'visible';
-            nextButton.style.visibility = hideNav ? 'hidden' : 'visible';
+            const currentImage = globalImages[globalImageIndex];
+            globalViewerImage.src = getZoomImageSrc(currentImage);
+            globalViewerImage.alt = currentImage.alt || '사진';
+            if (globalViewerCaption) {
+                globalViewerCaption.textContent = `${globalImageIndex + 1} / ${globalImages.length} · ${currentImage.alt || '사진'}`;
+            }
+            const hideNav = globalImages.length <= 1;
+            if (globalViewerPrev) {
+                globalViewerPrev.classList.toggle('hidden', hideNav);
+            }
+            if (globalViewerNext) {
+                globalViewerNext.classList.toggle('hidden', hideNav);
+            }
         };
 
-        const move = (step) => {
-            if (images.length <= 1) {
+        const openGlobalViewer = (clickedImage) => {
+            if (!globalViewer || !clickedImage) {
                 return;
             }
-            index = (index + step + images.length) % images.length;
-            render();
+            globalImages = Array.from(document.querySelectorAll('img[data-zoomable="true"]'));
+            globalImageIndex = globalImages.indexOf(clickedImage);
+            if (globalImageIndex < 0) {
+                return;
+            }
+            renderGlobalViewer();
+            globalViewer.classList.remove('hidden');
+            globalViewer.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('overflow-hidden');
         };
 
-        prevButton.addEventListener('click', () => move(-1));
-        nextButton.addEventListener('click', () => move(1));
-        closeButton.addEventListener('click', () => window.close());
-        window.addEventListener('keydown', (event) => {
-            if (event.key === 'ArrowLeft') move(-1);
-            if (event.key === 'ArrowRight') move(1);
-            if (event.key === 'Escape') window.close();
-        });
+        const closeGlobalViewer = () => {
+            if (!globalViewer || !globalViewerImage) {
+                return;
+            }
+            globalViewer.classList.add('hidden');
+            globalViewer.setAttribute('aria-hidden', 'true');
+            globalViewerImage.src = '';
+            globalImages = [];
+            globalImageIndex = -1;
+            document.body.classList.remove('overflow-hidden');
+        };
 
-        render();
-    </script>
-</body>
-</html>`;
-                };
-
-                const openDesktopSlideshow = (clickedImage) => {
-                        if (!desktopSlideshowQuery.matches || !clickedImage) {
-                                return;
-                        }
-                        const zoomableImages = Array.from(document.querySelectorAll('img[data-zoomable="true"]'));
-                        if (!zoomableImages.length) {
-                                return;
-                        }
-
-                        const images = zoomableImages.map((imageElement) => ({
-                                src: getZoomImageSrc(imageElement),
-                                alt: imageElement.alt || '',
-                        }));
-                        const startIndex = Math.max(0, zoomableImages.indexOf(clickedImage));
-
-                        slideshowWindowRef = window.open('', 'scGardenDesktopSlideshow', 'width=1280,height=860,resizable=yes,scrollbars=no');
-                        if (!slideshowWindowRef) {
-                                return;
-                        }
-
-                        slideshowWindowRef.document.open();
-                        slideshowWindowRef.document.write(buildSlideshowWindowHtml(images, startIndex));
-                        slideshowWindowRef.document.close();
-                        slideshowWindowRef.focus();
-                };
+        const moveGlobalViewer = (step) => {
+            if (!globalViewer || globalViewer.classList.contains('hidden') || globalImages.length <= 1) {
+                return;
+            }
+            globalImageIndex = (globalImageIndex + step + globalImages.length) % globalImages.length;
+            renderGlobalViewer();
+        };
 
         const bindZoomableImages = () => {
             const zoomableImages = document.querySelectorAll('img[data-zoomable="true"]');
@@ -256,23 +200,51 @@
                 imageElement.setAttribute('role', 'button');
                 imageElement.setAttribute('tabindex', '0');
                 imageElement.addEventListener('click', (event) => {
-                    if (!desktopSlideshowQuery.matches) {
-                        return;
-                    }
                     event.preventDefault();
-                    openDesktopSlideshow(imageElement);
+                    openGlobalViewer(imageElement);
                 });
                 imageElement.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
-                        if (!desktopSlideshowQuery.matches) {
-                            return;
-                        }
                         event.preventDefault();
-                        openDesktopSlideshow(imageElement);
+                        openGlobalViewer(imageElement);
                     }
                 });
             });
         };
+
+        if (globalViewerPrev) {
+            globalViewerPrev.addEventListener('click', () => moveGlobalViewer(-1));
+        }
+        if (globalViewerNext) {
+            globalViewerNext.addEventListener('click', () => moveGlobalViewer(1));
+        }
+        if (globalViewerClose) {
+            globalViewerClose.addEventListener('click', closeGlobalViewer);
+        }
+        if (globalViewer) {
+            globalViewer.addEventListener('click', (event) => {
+                if (event.target === globalViewer) {
+                    closeGlobalViewer();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (!globalViewer || globalViewer.classList.contains('hidden')) {
+                return;
+            }
+            if (event.key === 'Escape') {
+                closeGlobalViewer();
+                return;
+            }
+            if (event.key === 'ArrowLeft') {
+                moveGlobalViewer(-1);
+                return;
+            }
+            if (event.key === 'ArrowRight') {
+                moveGlobalViewer(1);
+            }
+        });
 
         bindZoomableImages();
     </script>
