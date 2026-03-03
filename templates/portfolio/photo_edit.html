@@ -12,7 +12,7 @@
     <div class="bg-white border border-gray-100 p-6">
         <div class="flex flex-col lg:flex-row gap-10">
             <div class="flex-1">
-                <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full max-w-[800px] h-auto object-contain" />
+                <img src="{{ photo.image.url }}" alt="{{ photo.title }}" data-zoomable="true" class="w-full max-w-[800px] h-auto object-contain cursor-zoom-in" />
                 <p class="mt-3 text-xs text-gray-500">{{ photo.title }}</p>
             </div>
             <div class="w-full lg:w-96">

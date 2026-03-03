@@ -210,7 +210,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {% for photo in group.photos %}
                             <article>
-                                <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full h-56 object-cover rounded-sm" />
+                                <img src="{{ photo.image.url }}" alt="{{ photo.title }}" data-season-viewable="true" class="w-full h-56 object-cover rounded-sm cursor-zoom-in" />
                                 <div class="mt-2 text-sm">{{ photo.title }}</div>
                             </article>
                         {% endfor %}
@@ -221,11 +221,29 @@
             <div class="text-sm text-gray-400">아직 등록된 사진이 없습니다.</div>
         {% endif %}
     </div>
+
+    <div id="season-viewer" class="fixed inset-0 z-[80] hidden bg-black/80 p-4 md:p-8" aria-hidden="true" role="dialog" aria-label="정원의 사계 감상 모드">
+        <div class="relative mx-auto flex h-full w-full max-w-6xl items-center justify-center">
+            <button id="season-viewer-prev" type="button" class="absolute left-0 md:left-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="이전 사진">‹</button>
+            <button id="season-viewer-close" type="button" class="absolute right-0 top-0 md:right-2 md:top-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="닫기">×</button>
+            <img id="season-viewer-image" src="" alt="" class="w-[88vw] md:w-[68vw] max-w-[960px] max-h-[60vh] object-contain rounded-sm" />
+            <button id="season-viewer-next" type="button" class="absolute right-0 md:right-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="다음 사진">›</button>
+            <div id="season-viewer-caption" class="absolute left-1/2 -translate-x-1/2 bottom-2 text-xs text-white/90"></div>
+        </div>
+    </div>
 </section>
 <script>
     const seasonOverlay = document.getElementById('season-overlay');
     const seasonBg = document.getElementById('season-bg');
     const activeSeason = '{{ active_key }}';
+    const seasonViewer = document.getElementById('season-viewer');
+    const seasonViewerImage = document.getElementById('season-viewer-image');
+    const seasonViewerPrev = document.getElementById('season-viewer-prev');
+    const seasonViewerNext = document.getElementById('season-viewer-next');
+    const seasonViewerClose = document.getElementById('season-viewer-close');
+    const seasonViewerCaption = document.getElementById('season-viewer-caption');
+    const seasonImages = Array.from(document.querySelectorAll('img[data-season-viewable="true"]'));
+    let seasonImageIndex = -1;
 
     const createParticles = (season) => {
         if (!seasonOverlay) {
@@ -274,7 +292,109 @@
         seasonBg.classList.add(season);
     };
 
+    const renderSeasonViewer = () => {
+        if (!seasonViewerImage || seasonImageIndex < 0 || seasonImageIndex >= seasonImages.length) {
+            return;
+        }
+        const currentImage = seasonImages[seasonImageIndex];
+        seasonViewerImage.src = currentImage.currentSrc || currentImage.src;
+        seasonViewerImage.alt = currentImage.alt || '정원 사진';
+        if (seasonViewerCaption) {
+            seasonViewerCaption.textContent = `${seasonImageIndex + 1} / ${seasonImages.length} · ${currentImage.alt || '정원 사진'}`;
+        }
+        const hideNav = seasonImages.length <= 1;
+        if (seasonViewerPrev) {
+            seasonViewerPrev.classList.toggle('hidden', hideNav);
+        }
+        if (seasonViewerNext) {
+            seasonViewerNext.classList.toggle('hidden', hideNav);
+        }
+    };
+
+    const openSeasonViewer = (targetImage) => {
+        if (!seasonViewer || !targetImage) {
+            return;
+        }
+        seasonImageIndex = seasonImages.indexOf(targetImage);
+        if (seasonImageIndex < 0) {
+            return;
+        }
+        renderSeasonViewer();
+        seasonViewer.classList.remove('hidden');
+        seasonViewer.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    const closeSeasonViewer = () => {
+        if (!seasonViewer || !seasonViewerImage) {
+            return;
+        }
+        seasonViewer.classList.add('hidden');
+        seasonViewer.setAttribute('aria-hidden', 'true');
+        seasonViewerImage.src = '';
+        seasonImageIndex = -1;
+        document.body.classList.remove('overflow-hidden');
+    };
+
+    const moveSeasonViewer = (step) => {
+        if (!seasonViewer || seasonViewer.classList.contains('hidden') || seasonImages.length <= 1) {
+            return;
+        }
+        seasonImageIndex = (seasonImageIndex + step + seasonImages.length) % seasonImages.length;
+        renderSeasonViewer();
+    };
+
     applySeasonBackground(activeSeason);
     createParticles(activeSeason);
+
+    seasonImages.forEach((imageElement) => {
+        imageElement.setAttribute('tabindex', '0');
+        imageElement.setAttribute('role', 'button');
+        imageElement.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openSeasonViewer(imageElement);
+        });
+        imageElement.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openSeasonViewer(imageElement);
+            }
+        });
+    });
+
+    if (seasonViewerPrev) {
+        seasonViewerPrev.addEventListener('click', () => moveSeasonViewer(-1));
+    }
+    if (seasonViewerNext) {
+        seasonViewerNext.addEventListener('click', () => moveSeasonViewer(1));
+    }
+    if (seasonViewerClose) {
+        seasonViewerClose.addEventListener('click', closeSeasonViewer);
+    }
+    if (seasonViewer) {
+        seasonViewer.addEventListener('click', (event) => {
+            if (event.target === seasonViewer) {
+                closeSeasonViewer();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (!seasonViewer || seasonViewer.classList.contains('hidden')) {
+            return;
+        }
+        if (event.key === 'Escape') {
+            closeSeasonViewer();
+            return;
+        }
+        if (event.key === 'ArrowLeft') {
+            moveSeasonViewer(-1);
+            return;
+        }
+        if (event.key === 'ArrowRight') {
+            moveSeasonViewer(1);
+        }
+    });
 </script>
 {% endblock %}

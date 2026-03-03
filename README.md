@@ -83,3 +83,68 @@ python manage.py migrate_photo_storage_paths --target nas --commit
 
 ## Tailwind CSS
 템플릿에서 CDN 방식으로 Tailwind CSS를 사용합니다. 필요 시 빌드 방식으로 전환 가능합니다.
+
+## GitHub Self-hosted Runner 오류 복구
+다음 오류가 보이면 이미 등록된 runner에 다시 `config`를 실행한 상태입니다.
+- `Cannot configure the runner because it is already configured.`
+- `Value cannot be null. (Parameter 'configuredSettings')`
+
+설치경로 빠른 확인:
+
+Windows (PowerShell, 서비스형 runner):
+```
+Get-CimInstance Win32_Service | ? Name -like 'actions.runner*' | select Name,State,PathName
+```
+
+Windows (폴더 스캔):
+```
+Get-ChildItem C:\,D:\,G:\ -Recurse -Filter config.cmd -ErrorAction SilentlyContinue | ? FullName -match 'actions-runner|runner' | select -Expand FullName
+```
+
+Linux/Synology:
+```
+find / -name config.sh 2>/dev/null
+```
+
+복구 순서(Windows runner):
+```
+cd <runner_설치_경로>
+.\svc.cmd stop
+.\svc.cmd uninstall
+.\config.cmd remove
+```
+
+`remove`가 실패하면(설정 파일 손상):
+```
+cd <runner_설치_경로>
+del .runner
+del .credentials
+del .credentials_rsaparams
+del .service
+```
+그 다음 다시 등록:
+```
+.\config.cmd --url https://github.com/<owner>/<repo> --token <new_token>
+.\svc.cmd install
+.\svc.cmd start
+```
+
+복구 순서(Linux/Synology runner):
+```
+cd <runner_설치_경로>
+./svc.sh stop
+./svc.sh uninstall
+./config.sh remove
+```
+
+`remove`가 실패하면:
+```
+cd <runner_설치_경로>
+rm -f .runner .credentials .credentials_rsaparams .service
+```
+그 다음 다시 등록:
+```
+./config.sh --url https://github.com/<owner>/<repo> --token <new_token>
+./svc.sh install
+./svc.sh start
+```

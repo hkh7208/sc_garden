@@ -115,6 +115,166 @@
                 mobileMenu.classList.toggle('hidden');
             });
         }
+
+                const desktopSlideshowQuery = window.matchMedia('(min-width: 1024px)');
+                let slideshowWindowRef = null;
+                const getZoomImageSrc = (imageElement) => imageElement.dataset.zoomSrc || imageElement.currentSrc || imageElement.src;
+
+                const buildSlideshowWindowHtml = (images, startIndex) => {
+                        const safeImages = JSON.stringify(images).replace(/</g, '\\u003c');
+                        return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>사진 슬라이드</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #0f1115; color: #fff; font-family: system-ui, -apple-system, sans-serif; }
+        .shell { min-height: 100vh; display: flex; flex-direction: column; }
+        .toolbar {
+            height: 56px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between;
+            background: rgba(0,0,0,0.45); border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .title { font-size: 13px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60vw; }
+        .counter { font-size: 12px; opacity: 0.75; }
+        .stage { flex: 1; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 22px; }
+        .nav {
+            width: 44px; height: 44px; border: 0; border-radius: 999px; cursor: pointer;
+            background: rgba(255,255,255,0.9); color: #111; font-size: 24px; line-height: 1;
+        }
+        .nav:hover { background: #fff; }
+        .photo-wrap { width: min(68vw, 960px); max-width: 960px; }
+        .photo {
+            width: 100%; max-height: 60vh; object-fit: contain; border-radius: 6px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+        }
+        .close-btn {
+            border: 1px solid rgba(255,255,255,0.3); background: transparent; color: #fff;
+            padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <div class="toolbar">
+            <div class="title" id="slide-title">사진 슬라이드</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span class="counter" id="slide-counter"></span>
+                <button class="close-btn" id="slide-close" type="button">닫기</button>
+            </div>
+        </div>
+        <div class="stage">
+            <button class="nav" id="slide-prev" type="button" aria-label="이전">‹</button>
+            <div class="photo-wrap">
+                <img id="slide-image" class="photo" src="" alt="" />
+            </div>
+            <button class="nav" id="slide-next" type="button" aria-label="다음">›</button>
+        </div>
+    </div>
+
+    <script>
+        const images = ${safeImages};
+        let index = ${startIndex};
+        const imageElement = document.getElementById('slide-image');
+        const titleElement = document.getElementById('slide-title');
+        const counterElement = document.getElementById('slide-counter');
+        const prevButton = document.getElementById('slide-prev');
+        const nextButton = document.getElementById('slide-next');
+        const closeButton = document.getElementById('slide-close');
+
+        const render = () => {
+            if (!images.length) {
+                return;
+            }
+            const current = images[index];
+            imageElement.src = current.src;
+            imageElement.alt = current.alt || '확대 이미지';
+            titleElement.textContent = current.alt || '사진 슬라이드';
+            counterElement.textContent = (index + 1) + ' / ' + images.length;
+            const hideNav = images.length <= 1;
+            prevButton.style.visibility = hideNav ? 'hidden' : 'visible';
+            nextButton.style.visibility = hideNav ? 'hidden' : 'visible';
+        };
+
+        const move = (step) => {
+            if (images.length <= 1) {
+                return;
+            }
+            index = (index + step + images.length) % images.length;
+            render();
+        };
+
+        prevButton.addEventListener('click', () => move(-1));
+        nextButton.addEventListener('click', () => move(1));
+        closeButton.addEventListener('click', () => window.close());
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft') move(-1);
+            if (event.key === 'ArrowRight') move(1);
+            if (event.key === 'Escape') window.close();
+        });
+
+        render();
+    </script>
+</body>
+</html>`;
+                };
+
+                const openDesktopSlideshow = (clickedImage) => {
+                        if (!desktopSlideshowQuery.matches || !clickedImage) {
+                                return;
+                        }
+                        const zoomableImages = Array.from(document.querySelectorAll('img[data-zoomable="true"]'));
+                        if (!zoomableImages.length) {
+                                return;
+                        }
+
+                        const images = zoomableImages.map((imageElement) => ({
+                                src: getZoomImageSrc(imageElement),
+                                alt: imageElement.alt || '',
+                        }));
+                        const startIndex = Math.max(0, zoomableImages.indexOf(clickedImage));
+
+                        slideshowWindowRef = window.open('', 'scGardenDesktopSlideshow', 'width=1280,height=860,resizable=yes,scrollbars=no');
+                        if (!slideshowWindowRef) {
+                                return;
+                        }
+
+                        slideshowWindowRef.document.open();
+                        slideshowWindowRef.document.write(buildSlideshowWindowHtml(images, startIndex));
+                        slideshowWindowRef.document.close();
+                        slideshowWindowRef.focus();
+                };
+
+        const bindZoomableImages = () => {
+            const zoomableImages = document.querySelectorAll('img[data-zoomable="true"]');
+            zoomableImages.forEach((imageElement) => {
+                if (imageElement.dataset.zoomBound === 'true') {
+                    return;
+                }
+                imageElement.dataset.zoomBound = 'true';
+                imageElement.setAttribute('role', 'button');
+                imageElement.setAttribute('tabindex', '0');
+                imageElement.addEventListener('click', (event) => {
+                    if (!desktopSlideshowQuery.matches) {
+                        return;
+                    }
+                    event.preventDefault();
+                    openDesktopSlideshow(imageElement);
+                });
+                imageElement.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        if (!desktopSlideshowQuery.matches) {
+                            return;
+                        }
+                        event.preventDefault();
+                        openDesktopSlideshow(imageElement);
+                    }
+                });
+            });
+        };
+
+        bindZoomableImages();
     </script>
 </body>
 </html>

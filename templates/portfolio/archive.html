@@ -24,7 +24,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {% for photo in photos %}
                 <article class="relative group">
-                    <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="w-full h-48 sm:h-56 md:h-64 object-cover rounded-sm" />
+                    <img src="{{ photo.image.url }}" alt="{{ photo.title }}" data-zoomable="true" class="w-full h-48 sm:h-56 md:h-64 object-cover rounded-sm cursor-zoom-in" />
                     <div class="mt-3">
                         <h3 class="text-sm font-medium">{{ photo.title }}</h3>
                         <p class="text-xs text-gray-500 mt-1">
