@@ -62,11 +62,20 @@
     </div>
 
     {% if year_groups %}
+        <div id="management-year-nav-top" class="flex flex-wrap items-center gap-2 mb-8 pb-3 border-b border-gray-100">
+            {% for year in year_groups %}
+                <a href="#management-year-{{ year.year }}" data-management-year-nav="{{ year.year }}" class="px-3 py-1 text-xs border rounded-full border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
+                    {{ year.year }}년 <span class="text-[10px]">({{ year.photo_count }})</span>
+                </a>
+            {% endfor %}
+        </div>
+
         {% for year in year_groups %}
-            <div class="mb-12">
+            <div id="management-year-{{ year.year }}" class="mb-12 scroll-mt-24">
                 <div class="flex items-center gap-4 mb-6">
                     <div class="text-lg title-font">{{ year.year }}년</div>
                     <div class="h-px bg-gray-200 flex-1"></div>
+                    <a href="#management-year-nav-top" class="px-2 py-1 text-[10px] border rounded-full border-gray-300 text-gray-500 hover:border-gray-900 hover:text-gray-900 whitespace-nowrap transition-colors">최상단 ↑</a>
                 </div>
                 {% for month in year.months %}
                     <div class="mb-8">
@@ -191,6 +200,19 @@
     const fileCount = document.getElementById('file-count');
     const previewGrid = document.getElementById('preview-grid');
     const dropzoneEmpty = document.getElementById('dropzone-empty');
+    const managementYearNavButtons = Array.from(document.querySelectorAll('[data-management-year-nav]'));
+    const managementYearSections = Array.from(document.querySelectorAll('[id^="management-year-"]'));
+
+    const setActiveManagementYear = (year) => {
+        managementYearNavButtons.forEach((button) => {
+            const isActive = button.dataset.managementYearNav === String(year);
+            button.classList.toggle('bg-gray-900', isActive);
+            button.classList.toggle('text-white', isActive);
+            button.classList.toggle('border-gray-900', isActive);
+            button.classList.toggle('text-gray-600', !isActive);
+            button.classList.toggle('border-gray-300', !isActive);
+        });
+    };
 
     const updateCount = (files) => {
         if (!files || files.length === 0) {
@@ -596,6 +618,29 @@
     function hideBulkEditMessages() {
         if (bulkEditError) bulkEditError.classList.add('hidden');
         if (bulkEditSuccess) bulkEditSuccess.classList.add('hidden');
+    }
+
+    if (managementYearNavButtons.length && managementYearSections.length) {
+        setActiveManagementYear(managementYearSections[0].id.replace('management-year-', ''));
+        managementYearNavButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                setActiveManagementYear(button.dataset.managementYearNav);
+            });
+        });
+
+        const managementYearObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    setActiveManagementYear(entry.target.id.replace('management-year-', ''));
+                }
+            });
+        }, {
+            root: null,
+            rootMargin: '-30% 0px -55% 0px',
+            threshold: 0.01,
+        });
+
+        managementYearSections.forEach((section) => managementYearObserver.observe(section));
     }
 </script>
 {% endblock %}

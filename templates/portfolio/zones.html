@@ -26,9 +26,9 @@
 
     <!-- 현재 선택된 zone의 사진들 -->
     {% if current_photo_groups %}
-        <div class="flex flex-wrap gap-2 mb-8">
+        <div id="zone-year-nav-top" class="flex flex-wrap items-center gap-2 mb-8 pb-3 border-b border-gray-100">
             {% for group in current_photo_groups %}
-                <a href="#zone-year-{{ group.year }}" data-zone-year-nav="{{ group.year }}" class="px-3 py-1 text-xs border rounded-full border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900">
+                <a href="#zone-year-{{ group.year }}" data-zone-year-nav="{{ group.year }}" class="px-3 py-1 text-xs border rounded-full border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
                     {{ group.year }}년 <span class="text-[10px]">({{ group.photos|length }})</span>
                 </a>
             {% endfor %}
@@ -39,6 +39,7 @@
                 <div class="flex items-center gap-4 mb-6">
                     <div class="text-lg title-font">{{ group.year }}</div>
                     <div class="h-px bg-gray-200 flex-1"></div>
+                    <a href="#zone-year-nav-top" class="px-2 py-1 text-[10px] border rounded-full border-gray-300 text-gray-500 hover:border-gray-900 hover:text-gray-900 whitespace-nowrap transition-colors">최상단 ↑</a>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

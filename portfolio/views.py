@@ -171,6 +171,17 @@ def archive(request):
 	photos = Photo.objects.select_related('season', 'zone').prefetch_related('tags')
 	if tag_slug:
 		photos = photos.filter(tags__slug=tag_slug)
+	photos = photos.order_by('-taken_at', '-created_at')
+
+	photo_groups = []
+	current_year = None
+	for photo in photos:
+		year = photo.taken_at.year if photo.taken_at else photo.created_at.year
+		if current_year != year:
+			photo_groups.append({'year': year, 'photos': [], 'photo_count': 0})
+			current_year = year
+		photo_groups[-1]['photos'].append(photo)
+		photo_groups[-1]['photo_count'] += 1
 	tags = Tag.objects.all()
 	initials = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅅ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
 	full_initials = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
@@ -194,6 +205,7 @@ def archive(request):
 		tags = [tag for tag in tags if get_initial(tag.name) == initial]
 	return render(request, 'portfolio/archive.html', {
 		'photos': photos,
+		'photo_groups': photo_groups,
 		'tags': tags,
 		'active_tag': tag_slug,
 		'tag_initials': initials,
@@ -228,13 +240,16 @@ def management(request):
 	year_groups = []
 	for year in sorted(year_map.keys()):
 		months = []
+		photo_count = 0
 		month_map = year_map[year]['months']
 		for month in range(1, 13):
 			days = []
 			for day in sorted(month_map.get(month, {}).keys()):
-				days.append({'day': day, 'photos': month_map[month][day]})
+				day_photos = month_map[month][day]
+				photo_count += len(day_photos)
+				days.append({'day': day, 'photos': day_photos})
 			months.append({'month': month, 'days': days})
-		year_groups.append({'year': year, 'months': months})
+		year_groups.append({'year': year, 'months': months, 'photo_count': photo_count})
 
 	upload_form = PhotoUploadForm()
 	duplicate_names = []
@@ -287,13 +302,16 @@ def management(request):
 			year_groups = []
 			for year in sorted(year_map.keys()):
 				months = []
+				photo_count = 0
 				month_map = year_map[year]['months']
 				for month in range(1, 13):
 					days = []
 					for day in sorted(month_map.get(month, {}).keys()):
-						days.append({'day': day, 'photos': month_map[month][day]})
+						day_photos = month_map[month][day]
+						photo_count += len(day_photos)
+						days.append({'day': day, 'photos': day_photos})
 					months.append({'month': month, 'days': days})
-				year_groups.append({'year': year, 'months': months})
+				year_groups.append({'year': year, 'months': months, 'photo_count': photo_count})
 	return render(request, 'portfolio/management.html', {
 		'year_groups': year_groups,
 		'upload_form': upload_form,

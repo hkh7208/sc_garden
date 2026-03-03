@@ -20,28 +20,204 @@
         {% endfor %}
     </div>
 
-    {% if photos %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {% for photo in photos %}
-                <article class="relative group">
-                    <img src="{{ photo.image.url }}" alt="{{ photo.title }}" data-zoomable="true" class="w-full h-48 sm:h-56 md:h-64 object-cover rounded-sm cursor-zoom-in" />
-                    <div class="mt-3">
-                        <h3 class="text-sm font-medium">{{ photo.title }}</h3>
-                        <p class="text-xs text-gray-500 mt-1">
-                            {% if photo.season %}{{ photo.season.name }}{% endif %}
-                            {% if photo.zone %} · {{ photo.zone.name }}{% endif %}
-                        </p>
-                        <div class="flex flex-wrap gap-1 mt-2">
-                            {% for tag in photo.tags.all %}
-                                <span class="text-[10px] uppercase tracking-wider text-gray-400">#{{ tag.name }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </article>
+    {% if photo_groups %}
+        <div id="archive-year-nav-top" class="flex flex-wrap items-center gap-2 mb-8 pb-3 border-b border-gray-100">
+            {% for group in photo_groups %}
+                <a href="#archive-year-{{ group.year }}" data-archive-year-nav="{{ group.year }}" class="px-3 py-1 text-xs border rounded-full border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
+                    {{ group.year }}년 <span class="text-[10px]">({{ group.photo_count }})</span>
+                </a>
             {% endfor %}
         </div>
+
+        {% for group in photo_groups %}
+            <div id="archive-year-{{ group.year }}" class="mb-12 scroll-mt-24">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="text-lg title-font">{{ group.year }}년</div>
+                    <div class="h-px bg-gray-200 flex-1"></div>
+                    <a href="#archive-year-nav-top" class="px-2 py-1 text-[10px] border rounded-full border-gray-300 text-gray-500 hover:border-gray-900 hover:text-gray-900 whitespace-nowrap transition-colors">최상단 ↑</a>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                    {% for photo in group.photos %}
+                        <article class="relative group">
+                            <img src="{{ photo.image.url }}" alt="{{ photo.title }}" data-archive-viewable="true" class="w-full h-48 sm:h-56 md:h-64 object-cover rounded-sm cursor-zoom-in" />
+                            <div class="mt-3">
+                                <h3 class="text-sm font-medium">{{ photo.title }}</h3>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    {% if photo.season %}{{ photo.season.name }}{% endif %}
+                                    {% if photo.zone %} · {{ photo.zone.name }}{% endif %}
+                                </p>
+                                <div class="flex flex-wrap gap-1 mt-2">
+                                    {% for tag in photo.tags.all %}
+                                        <span class="text-[10px] uppercase tracking-wider text-gray-400">#{{ tag.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
     {% else %}
         <div class="text-sm text-gray-500">아직 업로드된 사진이 없습니다.</div>
     {% endif %}
 </section>
+
+<div id="archive-viewer" class="fixed inset-0 z-[80] hidden bg-black/80 p-4 md:p-8" aria-hidden="true" role="dialog" aria-label="사진태그 감상 모드">
+    <div class="relative mx-auto flex h-full w-full max-w-6xl items-center justify-center">
+        <button id="archive-viewer-prev" type="button" class="absolute left-0 md:left-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="이전 사진">‹</button>
+        <button id="archive-viewer-close" type="button" class="absolute right-0 top-0 md:right-2 md:top-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="닫기">×</button>
+        <img id="archive-viewer-image" src="" alt="" class="w-[96vw] md:w-[92vw] max-w-[1440px] max-h-[90vh] object-contain rounded-sm" />
+        <button id="archive-viewer-next" type="button" class="absolute right-0 md:right-2 h-10 w-10 rounded-full bg-white/90 text-lg leading-none text-gray-900" aria-label="다음 사진">›</button>
+        <div id="archive-viewer-caption" class="absolute left-1/2 -translate-x-1/2 bottom-2 text-xs text-white/90"></div>
+    </div>
+</div>
+
+<script>
+    const archiveViewer = document.getElementById('archive-viewer');
+    const archiveViewerImage = document.getElementById('archive-viewer-image');
+    const archiveViewerPrev = document.getElementById('archive-viewer-prev');
+    const archiveViewerNext = document.getElementById('archive-viewer-next');
+    const archiveViewerClose = document.getElementById('archive-viewer-close');
+    const archiveViewerCaption = document.getElementById('archive-viewer-caption');
+    const archiveImages = Array.from(document.querySelectorAll('img[data-archive-viewable="true"]'));
+    const archiveYearNavButtons = Array.from(document.querySelectorAll('[data-archive-year-nav]'));
+    const archiveYearSections = Array.from(document.querySelectorAll('[id^="archive-year-"]'));
+    let archiveImageIndex = -1;
+
+    const setActiveArchiveYear = (year) => {
+        archiveYearNavButtons.forEach((button) => {
+            const isActive = button.dataset.archiveYearNav === String(year);
+            button.classList.toggle('bg-gray-900', isActive);
+            button.classList.toggle('text-white', isActive);
+            button.classList.toggle('border-gray-900', isActive);
+            button.classList.toggle('text-gray-600', !isActive);
+            button.classList.toggle('border-gray-300', !isActive);
+        });
+    };
+
+    const renderArchiveViewer = () => {
+        if (!archiveViewerImage || archiveImageIndex < 0 || archiveImageIndex >= archiveImages.length) {
+            return;
+        }
+        const currentImage = archiveImages[archiveImageIndex];
+        archiveViewerImage.src = currentImage.currentSrc || currentImage.src;
+        archiveViewerImage.alt = currentImage.alt || '사진태그 사진';
+        if (archiveViewerCaption) {
+            archiveViewerCaption.textContent = `${archiveImageIndex + 1} / ${archiveImages.length} · ${currentImage.alt || '사진태그 사진'}`;
+        }
+        const hideNav = archiveImages.length <= 1;
+        if (archiveViewerPrev) {
+            archiveViewerPrev.classList.toggle('hidden', hideNav);
+        }
+        if (archiveViewerNext) {
+            archiveViewerNext.classList.toggle('hidden', hideNav);
+        }
+    };
+
+    const openArchiveViewer = (targetImage) => {
+        if (!archiveViewer || !targetImage) {
+            return;
+        }
+        archiveImageIndex = archiveImages.indexOf(targetImage);
+        if (archiveImageIndex < 0) {
+            return;
+        }
+        renderArchiveViewer();
+        archiveViewer.classList.remove('hidden');
+        archiveViewer.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    const closeArchiveViewer = () => {
+        if (!archiveViewer || !archiveViewerImage) {
+            return;
+        }
+        archiveViewer.classList.add('hidden');
+        archiveViewer.setAttribute('aria-hidden', 'true');
+        archiveViewerImage.src = '';
+        archiveImageIndex = -1;
+        document.body.classList.remove('overflow-hidden');
+    };
+
+    const moveArchiveViewer = (step) => {
+        if (!archiveViewer || archiveViewer.classList.contains('hidden') || archiveImages.length <= 1) {
+            return;
+        }
+        archiveImageIndex = (archiveImageIndex + step + archiveImages.length) % archiveImages.length;
+        renderArchiveViewer();
+    };
+
+    if (archiveYearNavButtons.length && archiveYearSections.length) {
+        setActiveArchiveYear(archiveYearSections[0].id.replace('archive-year-', ''));
+        archiveYearNavButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                setActiveArchiveYear(button.dataset.archiveYearNav);
+            });
+        });
+
+        const archiveYearObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    setActiveArchiveYear(entry.target.id.replace('archive-year-', ''));
+                }
+            });
+        }, {
+            root: null,
+            rootMargin: '-30% 0px -55% 0px',
+            threshold: 0.01,
+        });
+
+        archiveYearSections.forEach((section) => archiveYearObserver.observe(section));
+    }
+
+    archiveImages.forEach((imageElement) => {
+        imageElement.setAttribute('tabindex', '0');
+        imageElement.setAttribute('role', 'button');
+        imageElement.addEventListener('click', (event) => {
+            event.preventDefault();
+            openArchiveViewer(imageElement);
+        });
+        imageElement.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openArchiveViewer(imageElement);
+            }
+        });
+    });
+
+    if (archiveViewerPrev) {
+        archiveViewerPrev.addEventListener('click', () => moveArchiveViewer(-1));
+    }
+    if (archiveViewerNext) {
+        archiveViewerNext.addEventListener('click', () => moveArchiveViewer(1));
+    }
+    if (archiveViewerClose) {
+        archiveViewerClose.addEventListener('click', closeArchiveViewer);
+    }
+    if (archiveViewer) {
+        archiveViewer.addEventListener('click', (event) => {
+            if (event.target === archiveViewer) {
+                closeArchiveViewer();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (!archiveViewer || archiveViewer.classList.contains('hidden')) {
+            return;
+        }
+        if (event.key === 'Escape') {
+            closeArchiveViewer();
+            return;
+        }
+        if (event.key === 'ArrowLeft') {
+            moveArchiveViewer(-1);
+            return;
+        }
+        if (event.key === 'ArrowRight') {
+            moveArchiveViewer(1);
+        }
+    });
+</script>
 {% endblock %}
