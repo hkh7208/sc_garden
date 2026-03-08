@@ -323,8 +323,21 @@ def management(request):
 
 
 def about(request):
-	author_photo_path = os.path.join(settings.MEDIA_ROOT, 'photos', 'local', '2026', '03', 'author_profile_20260308.png')
-	author_photo_url = '/media/photos/local/2026/03/author_profile_20260308.png'
+	author_dir = os.path.join(settings.MEDIA_ROOT, 'photos', 'local', '2026', '03')
+	default_filename = 'author_profile_attached.png'
+	filename = default_filename
+	allowed_extensions = ('.png', '.jpg', '.jpeg')
+
+	if os.path.isdir(author_dir):
+		candidate_files = [
+			name for name in os.listdir(author_dir)
+			if name.startswith('author_profile') and name.lower().endswith(allowed_extensions)
+		]
+		if candidate_files:
+			filename = max(candidate_files, key=lambda name: os.path.getmtime(os.path.join(author_dir, name)))
+
+	author_photo_path = os.path.join(author_dir, filename)
+	author_photo_url = f"/media/photos/local/2026/03/{filename}"
 	if os.path.exists(author_photo_path):
 		author_photo_url = f"{author_photo_url}?v={int(os.path.getmtime(author_photo_path))}"
 
