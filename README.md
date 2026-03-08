@@ -58,6 +58,27 @@ G:/VS_code/sc_garden/.venv/Scripts/python.exe manage.py createsuperuser
 G:/VS_code/sc_garden/.venv/Scripts/python.exe manage.py run_auto_server
 ```
 
+로컬 서버를 8080으로 고정 실행:
+```
+powershell -ExecutionPolicy Bypass -File .\scripts\run_local_8080.ps1
+```
+
+## NAS 데이터 동기화(로컬 작업용)
+NAS(192.168.0.250)의 DB와 `media`를 로컬로 가져올 때 사용합니다.
+
+```
+powershell -ExecutionPolicy Bypass -File .\scripts\sync_from_nas.ps1
+```
+
+옵션:
+- `-SkipMedia`: DB만 동기화
+- `-NasIp <IP>`: NAS IP 변경 시
+- `-NasMediaShare <share path>`: 기본값 `web\sc_garden\media`
+
+동기화 시 `backups/`에 다음 파일이 자동 생성됩니다.
+- 로컬 DB 백업(`local_before_sync_*.json`)
+- NAS 앱데이터 덤프(`nas_appdata_*.json`)
+
 자동 실행 규칙:
 - 로컬 개발 PC(기본): `127.0.0.1:8000` + local DB(`192.168.0.107`)
 - NAS 서버 IP가 `192.168.0.250`인 환경: `0.0.0.0:8080` + nas DB(`192.168.0.250`)

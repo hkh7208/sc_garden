@@ -70,15 +70,20 @@
             {% endfor %}
         </div>
 
+        <div id="management-month-nav" class="hidden flex flex-wrap items-center gap-2 mb-8 pb-3 border-b border-gray-100">
+            <span class="text-xs text-gray-500">월 선택</span>
+            <div id="management-month-nav-buttons" class="flex flex-wrap items-center gap-2"></div>
+        </div>
+
         {% for year in year_groups %}
-            <div id="management-year-{{ year.year }}" class="mb-12 scroll-mt-24">
+            <div id="management-year-{{ year.year }}" data-management-year="{{ year.year }}" class="mb-12 scroll-mt-24">
                 <div class="flex items-center gap-4 mb-6">
                     <div class="text-lg title-font">{{ year.year }}년</div>
                     <div class="h-px bg-gray-200 flex-1"></div>
                     <a href="#management-year-nav-top" class="px-2 py-1 text-[10px] border rounded-full border-gray-300 text-gray-500 hover:border-gray-900 hover:text-gray-900 whitespace-nowrap transition-colors">최상단 ↑</a>
                 </div>
                 {% for month in year.months %}
-                    <div class="mb-8">
+                    <div class="mb-8" data-management-month="{{ month.month }}" data-management-has-photos="{% if month.days %}1{% else %}0{% endif %}">
                         <div class="text-base font-medium">{{ month.month }}월</div>
                         {% if month.days %}
                             {% for day in month.days %}
@@ -192,6 +197,15 @@
     </div>
 </div>
 
+<div id="floating-select-actions" class="hidden fixed right-24 top-1/2 -translate-y-1/2 z-40 flex items-center gap-2">
+    <button id="floating-select-complete" type="button" class="px-4 py-3 bg-gray-900 text-white text-xs uppercase tracking-widest rounded-full shadow">
+        선택완료
+    </button>
+    <button id="floating-select-cancel" type="button" class="px-4 py-3 border border-gray-300 bg-white text-gray-700 text-xs uppercase tracking-widest rounded-full shadow">
+        선택취소
+    </button>
+</div>
+
 <script>
     const uploadToggle = document.getElementById('upload-toggle');
     const uploadForm = document.getElementById('upload-form');
@@ -201,17 +215,111 @@
     const previewGrid = document.getElementById('preview-grid');
     const dropzoneEmpty = document.getElementById('dropzone-empty');
     const managementYearNavButtons = Array.from(document.querySelectorAll('[data-management-year-nav]'));
-    const managementYearSections = Array.from(document.querySelectorAll('[id^="management-year-"]'));
+    const managementYearSections = Array.from(document.querySelectorAll('[data-management-year]'));
+    const managementMonthNav = document.getElementById('management-month-nav');
+    const managementMonthNavButtons = document.getElementById('management-month-nav-buttons');
+    let selectedManagementYear = null;
+    let selectedManagementMonth = null;
 
     const setActiveManagementYear = (year) => {
         managementYearNavButtons.forEach((button) => {
-            const isActive = button.dataset.managementYearNav === String(year);
+            const isActive = year !== null && button.dataset.managementYearNav === String(year);
             button.classList.toggle('bg-gray-900', isActive);
             button.classList.toggle('text-white', isActive);
             button.classList.toggle('border-gray-900', isActive);
             button.classList.toggle('text-gray-600', !isActive);
             button.classList.toggle('border-gray-300', !isActive);
         });
+    };
+
+    const renderManagementMonthButtons = (year) => {
+        if (!managementMonthNav || !managementMonthNavButtons) {
+            return;
+        }
+        if (year === null) {
+            managementMonthNav.classList.add('hidden');
+            managementMonthNavButtons.innerHTML = '';
+            return;
+        }
+
+        const yearSection = document.querySelector(`[data-management-year="${year}"]`);
+        if (!yearSection) {
+            managementMonthNav.classList.add('hidden');
+            managementMonthNavButtons.innerHTML = '';
+            return;
+        }
+
+        const monthSections = Array.from(yearSection.querySelectorAll('[data-management-month]'));
+        const months = monthSections
+            .filter((section) => section.dataset.managementHasPhotos === '1')
+            .map((section) => section.dataset.managementMonth);
+
+        managementMonthNavButtons.innerHTML = '';
+
+        const allButton = document.createElement('button');
+        allButton.type = 'button';
+        allButton.dataset.managementMonthNav = 'all';
+        allButton.className = 'px-3 py-1 text-xs border rounded-full border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors';
+        allButton.textContent = '전체';
+        allButton.addEventListener('click', () => {
+            selectedManagementMonth = null;
+            applyManagementFilters();
+        });
+        managementMonthNavButtons.appendChild(allButton);
+
+        months.forEach((month) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.dataset.managementMonthNav = month;
+            button.className = 'px-3 py-1 text-xs border rounded-full border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors';
+            button.textContent = `${month}월`;
+            button.addEventListener('click', () => {
+                selectedManagementMonth = Number(month);
+                applyManagementFilters();
+            });
+            managementMonthNavButtons.appendChild(button);
+        });
+
+        managementMonthNav.classList.toggle('hidden', months.length === 0);
+    };
+
+    const setActiveManagementMonth = (month) => {
+        if (!managementMonthNavButtons) {
+            return;
+        }
+        const monthButtons = managementMonthNavButtons.querySelectorAll('[data-management-month-nav]');
+        monthButtons.forEach((button) => {
+            const isActive =
+                (month === null && button.dataset.managementMonthNav === 'all') ||
+                (month !== null && button.dataset.managementMonthNav === String(month));
+            button.classList.toggle('bg-gray-900', isActive);
+            button.classList.toggle('text-white', isActive);
+            button.classList.toggle('border-gray-900', isActive);
+            button.classList.toggle('text-gray-600', !isActive);
+            button.classList.toggle('border-gray-300', !isActive);
+        });
+    };
+
+    const applyManagementFilters = () => {
+        managementYearSections.forEach((yearSection) => {
+            const year = Number(yearSection.dataset.managementYear);
+            const isSelectedYear = selectedManagementYear === year;
+            const showYear = selectedManagementYear === null || isSelectedYear;
+            yearSection.classList.toggle('hidden', !showYear);
+
+            const monthSections = yearSection.querySelectorAll('[data-management-month]');
+            monthSections.forEach((monthSection) => {
+                if (!showYear || !isSelectedYear || selectedManagementMonth === null) {
+                    monthSection.classList.remove('hidden');
+                    return;
+                }
+                const month = Number(monthSection.dataset.managementMonth);
+                monthSection.classList.toggle('hidden', month !== selectedManagementMonth);
+            });
+        });
+
+        setActiveManagementYear(selectedManagementYear);
+        setActiveManagementMonth(selectedManagementMonth);
     };
 
     const updateCount = (files) => {
@@ -462,10 +570,25 @@
     const bulkEditError = document.getElementById('bulk-edit-error');
     const bulkEditSuccess = document.getElementById('bulk-edit-success');
     const photoCheckboxes = document.querySelectorAll('.photo-checkbox');
+    const floatingSelectActions = document.getElementById('floating-select-actions');
+    const floatingSelectCompleteButton = document.getElementById('floating-select-complete');
+    const floatingSelectCancelButton = document.getElementById('floating-select-cancel');
 
     let bulkEditMode = false;
     const originalButtonText = '다중수정';
     const selectingButtonText = '선택완료';
+
+    function openBulkEditModal() {
+        const checkedCount = document.querySelectorAll('.photo-checkbox:checked').length;
+        if (checkedCount === 0) {
+            alert('사진을 선택해주세요.');
+            return;
+        }
+        if (bulkEditModal) {
+            bulkEditModal.classList.remove('hidden');
+            loadZonesForBulkEdit();
+        }
+    }
 
     // 다중수정 버튼 클릭
     if (bulkEditToggle) {
@@ -478,18 +601,23 @@
                 photoCheckboxes.forEach(cb => cb.classList.remove('hidden'));
                 updateSelectedCount();
             } else {
-                // 선택완료 버튼 클릭 - 모달 표시
-                const checkedCount = document.querySelectorAll('.photo-checkbox:checked').length;
-                if (checkedCount === 0) {
-                    alert('사진을 선택해주세요.');
-                    return;
-                }
-                // 모달 표시
-                if (bulkEditModal) {
-                    bulkEditModal.classList.remove('hidden');
-                    loadZonesForBulkEdit();
-                }
+                openBulkEditModal();
             }
+        });
+    }
+
+    if (floatingSelectCompleteButton) {
+        floatingSelectCompleteButton.addEventListener('click', () => {
+            openBulkEditModal();
+        });
+    }
+
+    if (floatingSelectCancelButton) {
+        floatingSelectCancelButton.addEventListener('click', () => {
+            photoCheckboxes.forEach((checkbox) => {
+                checkbox.checked = false;
+            });
+            updateSelectedCount();
         });
     }
 
@@ -511,6 +639,20 @@
             } else {
                 bulkEditToggle.textContent = selectingButtonText;
             }
+        }
+
+        if (floatingSelectActions) {
+            const showFloatingActions = bulkEditMode;
+            floatingSelectActions.classList.toggle('hidden', !showFloatingActions);
+        }
+
+        if (floatingSelectCompleteButton) {
+            if (bulkEditMode) {
+                floatingSelectCompleteButton.textContent = `${selectingButtonText} (${checkedCount}장)`;
+            }
+            floatingSelectCompleteButton.disabled = checkedCount === 0;
+            floatingSelectCompleteButton.classList.toggle('opacity-50', checkedCount === 0);
+            floatingSelectCompleteButton.classList.toggle('cursor-not-allowed', checkedCount === 0);
         }
     }
 
@@ -621,26 +763,27 @@
     }
 
     if (managementYearNavButtons.length && managementYearSections.length) {
-        setActiveManagementYear(managementYearSections[0].id.replace('management-year-', ''));
         managementYearNavButtons.forEach((button) => {
-            button.addEventListener('click', () => {
-                setActiveManagementYear(button.dataset.managementYearNav);
-            });
-        });
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                const clickedYear = Number(button.dataset.managementYearNav);
 
-        const managementYearObserver = new IntersectionObserver((entries) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    setActiveManagementYear(entry.target.id.replace('management-year-', ''));
+                if (selectedManagementYear !== clickedYear) {
+                    selectedManagementYear = clickedYear;
+                    selectedManagementMonth = null;
+                    renderManagementMonthButtons(clickedYear);
+                } else if (selectedManagementMonth !== null) {
+                    selectedManagementMonth = null;
+                }
+
+                applyManagementFilters();
+
+                const targetSection = document.querySelector(`[data-management-year="${clickedYear}"]`);
+                if (targetSection && !targetSection.classList.contains('hidden')) {
+                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
-        }, {
-            root: null,
-            rootMargin: '-30% 0px -55% 0px',
-            threshold: 0.01,
         });
-
-        managementYearSections.forEach((section) => managementYearObserver.observe(section));
     }
 </script>
 {% endblock %}

@@ -2,6 +2,7 @@ import io
 import os
 from datetime import date
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
@@ -322,7 +323,14 @@ def management(request):
 
 
 def about(request):
-	return render(request, 'portfolio/about.html')
+	author_photo_path = os.path.join(settings.MEDIA_ROOT, 'photos', 'local', '2026', '03', 'author_profile_20260308.png')
+	author_photo_url = '/media/photos/local/2026/03/author_profile_20260308.png'
+	if os.path.exists(author_photo_path):
+		author_photo_url = f"{author_photo_url}?v={int(os.path.getmtime(author_photo_path))}"
+
+	return render(request, 'portfolio/about.html', {
+		'author_photo_url': author_photo_url,
+	})
 
 
 def edit_photo(request, photo_id):

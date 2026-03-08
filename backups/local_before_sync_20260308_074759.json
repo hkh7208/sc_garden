@@ -1,0 +1,680 @@
+[
+{
+  "model": "auth.permission",
+  "pk": 1,
+  "fields": {
+    "name": "Can add log entry",
+    "content_type": 1,
+    "codename": "add_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 2,
+  "fields": {
+    "name": "Can change log entry",
+    "content_type": 1,
+    "codename": "change_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 3,
+  "fields": {
+    "name": "Can delete log entry",
+    "content_type": 1,
+    "codename": "delete_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 4,
+  "fields": {
+    "name": "Can view log entry",
+    "content_type": 1,
+    "codename": "view_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 5,
+  "fields": {
+    "name": "Can add permission",
+    "content_type": 2,
+    "codename": "add_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 6,
+  "fields": {
+    "name": "Can change permission",
+    "content_type": 2,
+    "codename": "change_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 7,
+  "fields": {
+    "name": "Can delete permission",
+    "content_type": 2,
+    "codename": "delete_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 8,
+  "fields": {
+    "name": "Can view permission",
+    "content_type": 2,
+    "codename": "view_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 9,
+  "fields": {
+    "name": "Can add group",
+    "content_type": 3,
+    "codename": "add_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 10,
+  "fields": {
+    "name": "Can change group",
+    "content_type": 3,
+    "codename": "change_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 11,
+  "fields": {
+    "name": "Can delete group",
+    "content_type": 3,
+    "codename": "delete_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 12,
+  "fields": {
+    "name": "Can view group",
+    "content_type": 3,
+    "codename": "view_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 13,
+  "fields": {
+    "name": "Can add user",
+    "content_type": 4,
+    "codename": "add_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 14,
+  "fields": {
+    "name": "Can change user",
+    "content_type": 4,
+    "codename": "change_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 15,
+  "fields": {
+    "name": "Can delete user",
+    "content_type": 4,
+    "codename": "delete_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 16,
+  "fields": {
+    "name": "Can view user",
+    "content_type": 4,
+    "codename": "view_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 17,
+  "fields": {
+    "name": "Can add content type",
+    "content_type": 5,
+    "codename": "add_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 18,
+  "fields": {
+    "name": "Can change content type",
+    "content_type": 5,
+    "codename": "change_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 19,
+  "fields": {
+    "name": "Can delete content type",
+    "content_type": 5,
+    "codename": "delete_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 20,
+  "fields": {
+    "name": "Can view content type",
+    "content_type": 5,
+    "codename": "view_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 21,
+  "fields": {
+    "name": "Can add session",
+    "content_type": 6,
+    "codename": "add_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 22,
+  "fields": {
+    "name": "Can change session",
+    "content_type": 6,
+    "codename": "change_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 23,
+  "fields": {
+    "name": "Can delete session",
+    "content_type": 6,
+    "codename": "delete_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 24,
+  "fields": {
+    "name": "Can view session",
+    "content_type": 6,
+    "codename": "view_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 25,
+  "fields": {
+    "name": "Can add season",
+    "content_type": 7,
+    "codename": "add_season"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 26,
+  "fields": {
+    "name": "Can change season",
+    "content_type": 7,
+    "codename": "change_season"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 27,
+  "fields": {
+    "name": "Can delete season",
+    "content_type": 7,
+    "codename": "delete_season"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 28,
+  "fields": {
+    "name": "Can view season",
+    "content_type": 7,
+    "codename": "view_season"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 29,
+  "fields": {
+    "name": "Can add tag",
+    "content_type": 8,
+    "codename": "add_tag"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 30,
+  "fields": {
+    "name": "Can change tag",
+    "content_type": 8,
+    "codename": "change_tag"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 31,
+  "fields": {
+    "name": "Can delete tag",
+    "content_type": 8,
+    "codename": "delete_tag"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 32,
+  "fields": {
+    "name": "Can view tag",
+    "content_type": 8,
+    "codename": "view_tag"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 33,
+  "fields": {
+    "name": "Can add zone",
+    "content_type": 9,
+    "codename": "add_zone"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 34,
+  "fields": {
+    "name": "Can change zone",
+    "content_type": 9,
+    "codename": "change_zone"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 35,
+  "fields": {
+    "name": "Can delete zone",
+    "content_type": 9,
+    "codename": "delete_zone"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 36,
+  "fields": {
+    "name": "Can view zone",
+    "content_type": 9,
+    "codename": "view_zone"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 37,
+  "fields": {
+    "name": "Can add photo",
+    "content_type": 10,
+    "codename": "add_photo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 38,
+  "fields": {
+    "name": "Can change photo",
+    "content_type": 10,
+    "codename": "change_photo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 39,
+  "fields": {
+    "name": "Can delete photo",
+    "content_type": 10,
+    "codename": "delete_photo"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 40,
+  "fields": {
+    "name": "Can view photo",
+    "content_type": 10,
+    "codename": "view_photo"
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$600000$WAIy9sgaX1U7K0ZY52Enfn$OgzT2s+qcdWfWrdcWj1yoBLctGhP4Ozz/NUd8m6dRFk=",
+    "last_login": "2026-02-20T23:31:04.893Z",
+    "is_superuser": true,
+    "username": "hdj1123",
+    "first_name": "",
+    "last_name": "",
+    "email": "hdj1123@example.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-02-17T05:52:39.583Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 1,
+  "fields": {
+    "app_label": "admin",
+    "model": "logentry"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 2,
+  "fields": {
+    "app_label": "auth",
+    "model": "permission"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 3,
+  "fields": {
+    "app_label": "auth",
+    "model": "group"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 4,
+  "fields": {
+    "app_label": "auth",
+    "model": "user"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 5,
+  "fields": {
+    "app_label": "contenttypes",
+    "model": "contenttype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 6,
+  "fields": {
+    "app_label": "sessions",
+    "model": "session"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 7,
+  "fields": {
+    "app_label": "portfolio",
+    "model": "season"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 8,
+  "fields": {
+    "app_label": "portfolio",
+    "model": "tag"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 9,
+  "fields": {
+    "app_label": "portfolio",
+    "model": "zone"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 10,
+  "fields": {
+    "app_label": "portfolio",
+    "model": "photo"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "08cvs10hq6xm6pdbvmdhcwpe0vthhcla",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGlnYXhKbkp4zWPszDqBEipMKcXeIlALaNzPvZTKuS81r0zkPYs7GmcPvRsgPHTcgdxxvk-VpXOaB7KbYnTZ7nUSfl939O6jY6remwNBFIA8KJCIQuxSdciKUhCSFi_ooEoI_cjkFUNcXhJQYpS_BmfcHEFw5LA:1vt2LQ:EUOC-oNTF3oGFsLb7ThuOlkF8pyZ6YVYcitq3ZSIV_4",
+    "expire_date": "2026-03-05T11:37:20.978Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "3rv8r2lcotbp7ued7uckteyzlu8vxv3u",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGlnYXhKbkp4zWPszDqBEipMKcXeIlALaNzPvZTKuS81r0zkPYs7GmcPvRsgPHTcgdxxvk-VpXOaB7KbYnTZ7nUSfl939O6jY6remwNBFIA8KJCIQuxSdciKUhCSFi_ooEoI_cjkFUNcXhJQYpS_BmfcHEFw5LA:1vtZkX:P-VD0mF-uRkLiYzjZ5qGuYw8qbF-BUiI6cUZJzUSZT0",
+    "expire_date": "2026-03-06T23:17:29.606Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "55re681bxqtcco5m5zvs31rfglmch6sh",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGlnYXhKbkp4zWPszDqBEipMKcXeIlALaNzPvZTKuS81r0zkPYs7GmcPvRsgPHTcgdxxvk-VpXOaB7KbYnTZ7nUSfl939O6jY6remwNBFIA8KJCIQuxSdciKUhCSFi_ooEoI_cjkFUNcXhJQYpS_BmfcHEFw5LA:1vsE2u:V0HwxtZ_DMGv-4wCrPfmnVXSVAb19H8LsoDvYGKND6o",
+    "expire_date": "2026-03-03T05:54:52.543Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "ejgu6hnyusn882xk5chnrgk4tyk0rtyj",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGlnYXhKbkp4zWPszDqBEipMKcXeIlALaNzPvZTKuS81r0zkPYs7GmcPvRsgPHTcgdxxvk-VpXOaB7KbYnTZ7nUSfl939O6jY6remwNBFIA8KJCIQuxSdciKUhCSFi_ooEoI_cjkFUNcXhJQYpS_BmfcHEFw5LA:1vtZmo:3JQqhMW0XtS8wupND6jWGLvW_u6DOp1eYLyTsY2CHO8",
+    "expire_date": "2026-03-06T23:19:50.944Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "ejt49bd1buqhbwzrpko457ffmlx3sp3w",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGlnYXhKbkp4zWPszDqBEipMKcXeIlALaNzPvZTKuS81r0zkPYs7GmcPvRsgPHTcgdxxvk-VpXOaB7KbYnTZ7nUSfl939O6jY6remwNBFIA8KJCIQuxSdciKUhCSFi_ooEoI_cjkFUNcXhJQYpS_BmfcHEFw5LA:1vt2OH:iuNK625BQQytOyIzcnM5J-CtCgKeOEd6Hp3Yp3kpqRQ",
+    "expire_date": "2026-03-05T11:40:17.291Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "jwzr1dv98fcg30vwaw2a74j0ql76qoxf",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGlnYXhKbkp4zWPszDqBEipMKcXeIlALaNzPvZTKuS81r0zkPYs7GmcPvRsgPHTcgdxxvk-VpXOaB7KbYnTZ7nUSfl939O6jY6remwNBFIA8KJCIQuxSdciKUhCSFi_ooEoI_cjkFUNcXhJQYpS_BmfcHEFw5LA:1vtZxg:QV1RXGXY9oaLy5gkEv9OkBVCqfytyyDAkK68urCtnVA",
+    "expire_date": "2026-03-06T23:31:04.895Z"
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "ky9e9m686ujcuykppejtoua8qnq6nwo7",
+  "fields": {
+    "session_data": ".eJxVjDsOwjAQBe_iGlnYXhKbkp4zWPszDqBEipMKcXeIlALaNzPvZTKuS81r0zkPYs7GmcPvRsgPHTcgdxxvk-VpXOaB7KbYnTZ7nUSfl939O6jY6remwNBFIA8KJCIQuxSdciKUhCSFi_ooEoI_cjkFUNcXhJQYpS_BmfcHEFw5LA:1vsMFq:H08855rD7AwYfMc-LuGeTVb8yYT_Me0mUVFpbmMzCjY",
+    "expire_date": "2026-03-03T14:40:46.490Z"
+  }
+},
+{
+  "model": "portfolio.season",
+  "pk": 1,
+  "fields": {
+    "name": "봄의 튤립",
+    "slug": "spring-tulip",
+    "description": "튤립이 피어나는 봄",
+    "order": 1
+  }
+},
+{
+  "model": "portfolio.season",
+  "pk": 2,
+  "fields": {
+    "name": "여름의 녹음",
+    "slug": "summer-green",
+    "description": "짙은 녹음의 여름",
+    "order": 2
+  }
+},
+{
+  "model": "portfolio.season",
+  "pk": 3,
+  "fields": {
+    "name": "가을의 갈대",
+    "slug": "autumn-reed",
+    "description": "바람에 흔들리는 갈대",
+    "order": 3
+  }
+},
+{
+  "model": "portfolio.season",
+  "pk": 4,
+  "fields": {
+    "name": "겨울의 설경",
+    "slug": "winter-snow",
+    "description": "차분한 눈의 계절",
+    "order": 4
+  }
+},
+{
+  "model": "portfolio.season",
+  "pk": 5,
+  "fields": {
+    "name": "봄",
+    "slug": "봄",
+    "description": "",
+    "order": 0
+  }
+},
+{
+  "model": "portfolio.season",
+  "pk": 6,
+  "fields": {
+    "name": "겨울",
+    "slug": "겨울",
+    "description": "",
+    "order": 0
+  }
+},
+{
+  "model": "portfolio.zone",
+  "pk": 1,
+  "fields": {
+    "name": "네덜란드 정원",
+    "slug": "netherlands",
+    "description": "튤립과 풍차의 정원",
+    "order": 1
+  }
+},
+{
+  "model": "portfolio.zone",
+  "pk": 2,
+  "fields": {
+    "name": "프랑스 정원",
+    "slug": "france",
+    "description": "정제된 선과 색",
+    "order": 2
+  }
+},
+{
+  "model": "portfolio.zone",
+  "pk": 3,
+  "fields": {
+    "name": "꿈의 다리",
+    "slug": "dream-bridge",
+    "description": "산책로와 다리",
+    "order": 3
+  }
+},
+{
+  "model": "portfolio.zone",
+  "pk": 4,
+  "fields": {
+    "name": "순천만 습지",
+    "slug": "suncheon-wetland",
+    "description": "자연의 숨결",
+    "order": 4
+  }
+},
+{
+  "model": "portfolio.photo",
+  "pk": 42,
+  "fields": {
+    "title": "133926187982603178",
+    "image": "photos/local/2026/02/133926187982603178_q6mo4nH.jpg",
+    "original_filename": "133926187982603178.jpg",
+    "description": "",
+    "season": null,
+    "zone": null,
+    "taken_at": null,
+    "created_at": "2026-02-21T00:00:20.360Z",
+    "is_featured": false,
+    "tags": []
+  }
+},
+{
+  "model": "portfolio.photo",
+  "pk": 43,
+  "fields": {
+    "title": "133868600248622074",
+    "image": "photos/local/2026/02/133868600248622074_XieyUX2.jpg",
+    "original_filename": "133868600248622074.jpg",
+    "description": "",
+    "season": null,
+    "zone": null,
+    "taken_at": null,
+    "created_at": "2026-02-21T00:00:20.432Z",
+    "is_featured": false,
+    "tags": []
+  }
+},
+{
+  "model": "portfolio.photo",
+  "pk": 44,
+  "fields": {
+    "title": "133884903579702377",
+    "image": "photos/local/2026/02/133884903579702377_pCF9H18.jpg",
+    "original_filename": "133884903579702377.jpg",
+    "description": "",
+    "season": null,
+    "zone": null,
+    "taken_at": null,
+    "created_at": "2026-02-21T00:00:20.496Z",
+    "is_featured": false,
+    "tags": []
+  }
+},
+{
+  "model": "portfolio.photo",
+  "pk": 45,
+  "fields": {
+    "title": "133884903604909585",
+    "image": "photos/local/2026/02/133884903604909585_p8gZGvT.jpg",
+    "original_filename": "133884903604909585.jpg",
+    "description": "",
+    "season": null,
+    "zone": null,
+    "taken_at": null,
+    "created_at": "2026-02-21T00:00:20.564Z",
+    "is_featured": false,
+    "tags": []
+  }
+}
+]

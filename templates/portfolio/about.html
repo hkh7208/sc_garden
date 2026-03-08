@@ -3,12 +3,40 @@
 {% block title %}작가소개 | 순천만정원{% endblock %}
 
 {% block content %}
-<section class="max-w-4xl mx-auto px-6 py-20">
-    <h1 class="text-3xl font-light mb-6">About</h1>
-    <div class="text-sm leading-7 text-gray-600">
-        <p>순천만 정원은 계절마다 다른 온도와 빛을 들려줍니다. 저는 그 순간이 사라지기 전에 조용히 기록합니다.</p>
-        <p class="mt-4">사진은 결국 기억을 붙잡는 방법이라 믿습니다. 작은 산책이 가장 큰 위로가 되던 날들을 이곳에 담아둡니다.</p>
-        <p class="mt-4">이 공간은 정원의 숨결을 함께 나누는 작은 포트폴리오입니다. 감사</p>
+<section class="max-w-6xl mx-auto px-6 py-20">
+    <h1 class="text-3xl font-light mb-8">작가소개</h1>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-start">
+        <figure class="author-photo-stage rounded-sm overflow-hidden">
+            <img src="{{ author_photo_url }}" alt="작가 사진" class="author-photo-layer author-photo-engraved" />
+        </figure>
+
+        <div class="text-xl leading-8 text-gray-600 lg:pt-4">
+            <p>안녕하세요, 저는 순천만 정원의 사진작가 황동진 입니다.</p><br>
+            <p>순천만 정원은 계절마다 다른 온도와 빛을 들려줍니다. 저는 그 순간이 사라지기 전에 조용히 기록합니다.</p>
+            <p class="mt-4">사진은 결국 기억을 붙잡는 방법이라 믿습니다. 작은 산책이 가장 큰 위로가 되던 날들을 이곳에 담아둡니다.</p>
+            <p class="mt-4">이 공간은 정원의 숨결을 함께 나누는 작은 포트폴리오입니다. 감사합니다.</p>
+        </div>
     </div>
 </section>
+
+<style>
+    .author-photo-stage {
+        position: relative;
+        aspect-ratio: 3 / 4;
+        padding: 0.5rem;
+    }
+
+    .author-photo-layer {
+        position: relative;
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center;
+    }
+
+    .author-photo-engraved {
+        filter: none;
+    }
+</style>
 {% endblock %}
